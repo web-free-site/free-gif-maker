@@ -138,6 +138,7 @@ article li{margin:.35rem 0}
 .muted{font-size:.9rem;color:#9a8e82}
 </style>
 <script type="application/ld+json">${ld}</script>
+<script src="https://ref.web-free.site/r.js" defer></script>
 </head>
 <body>
 <header class="site-chrome">

@@ -1,0 +1,3416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gifio: make a GIF from your photos</title>
+<meta name="description" content="Gifio turns a few photos into a GIF, a short picture that moves and loops. Free, no account, and your photos never leave your device.">
+<meta name="theme-color" content="#5c4f42">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Serif:ital,opsz,wght@0,8..144,400;0,8..144,600;1,8..144,300;1,8..144,400&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #faf6f1 0%, #f0ebe4 40%, #e8e0d6 100%);
+  color: #3a3530;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+h1 {
+  font-family: 'Roboto Serif', serif;
+  font-size: 2.6rem;
+  font-weight: 300;
+  font-style: italic;
+  color: #5c4f42;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #9a8e82;
+  margin-bottom: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.privacy-note {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: #b0a599;
+  background: rgba(255,255,255,0.5);
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+}
+.mark { margin-bottom: 0.5rem; opacity: 0.9; }
+
+@media (max-width: 380px) {
+  .app { padding: 1rem 0.75rem 2rem; }
+  h1 { font-size: 1.7rem; }
+  .subtitle { font-size: 0.78rem; }
+  .mark svg { width: 260px; }
+  .drop-zone { padding: 2rem 0.75rem; border-radius: 14px; }
+  .drop-zone.has-frames { padding: 0.8rem; }
+  .drop-text { font-size: 0.92rem; }
+  .drop-hint { font-size: 0.75rem; }
+  .frame-card img { width: 72px; height: 54px; }
+  .preset-chip canvas, .elem-chip canvas { width: 48px; height: 36px; }
+  .preset-chip-label, .elem-chip-label { font-size: 0.56rem; max-width: 52px; }
+  .preview-img { max-height: 280px; }
+  .controls { padding: 1rem; }
+  .control-label { min-width: 42px; font-size: 0.78rem; }
+  .control-value { min-width: 45px; font-size: 0.75rem; }
+  .style-title { font-size: 0.78rem; }
+  .footer { font-size: 0.7rem; }
+  .privacy-note { font-size: 0.65rem; }
+}
+.filmstrip-tools{display:flex;align-items:center;gap:.6rem;margin:.5rem 0 0}
+.ft-btn{font:inherit;font-size:.82rem;padding:.3rem .85rem;border-radius:16px;border:1.5px solid #8b7355;background:#fff;color:#8b7355;cursor:pointer;transition:background .15s,color .15s}
+.ft-btn.on,.ft-btn:hover{background:#8b7355;color:#fff}
+.ft-danger{border-color:#a85442;color:#a85442}
+.ft-danger:hover{background:#a85442;color:#fff}
+.ft-count{font-size:.85rem;color:#8b7355;opacity:.85}
+.frame-card.selected{border-color:#8b7355;box-shadow:0 0 0 3px rgba(139,115,85,.25)}
+.frame-check{position:absolute;top:5px;left:5px;width:19px;height:19px;border-radius:50%;background:#8b7355;color:#fff;font-size:12px;line-height:19px;text-align:center;display:none;pointer-events:none}
+.frame-card.selected .frame-check{display:block}
+.frame-mult{position:absolute;bottom:5px;right:5px;background:rgba(60,45,30,.75);color:#ffe1a8;font-size:10px;font-weight:600;padding:1px 5px;border-radius:5px;pointer-events:none}
+.mult-chips{display:flex;gap:.4rem;flex:1}
+.mult-chips button{font:inherit;font-size:.8rem;padding:.28rem .7rem;border-radius:14px;border:1.5px solid rgba(139,115,85,.5);background:#fff;color:#6b5a45;cursor:pointer}
+.mult-chips button.on{background:#8b7355;border-color:#8b7355;color:#fff}
+.notice{margin:.75rem 0 0;padding:.75rem 1rem;border-radius:12px;background:#fff6e8;border:1px solid #e3c9a0;color:#5c4632;font-size:.9rem;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 680 210" width="340">
+      <rect x="68" y="48" width="96" height="128" rx="4" fill="#FCDCDC" stroke="#D4706E" stroke-width="1.5" opacity="0.55"/>
+      <line x1="72" y1="50" x2="160" y2="50" stroke="#E8807E" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+      <rect x="148" y="42" width="96" height="128" rx="8" fill="#FAE0C8" stroke="#CC7A42" stroke-width="1.4" opacity="0.6"/>
+      <line x1="153" y1="45" x2="239" y2="45" stroke="#E89050" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+      <rect x="228" y="36" width="96" height="128" rx="12" fill="#FCF0C8" stroke="#B8962E" stroke-width="1.3" opacity="0.65"/>
+      <line x1="234" y1="40" x2="318" y2="40" stroke="#D4AC38" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+      <rect x="308" y="32" width="96" height="128" rx="18" fill="#D4F0D0" stroke="#5E9E54" stroke-width="1.2" opacity="0.65"/>
+      <line x1="316" y1="37" x2="396" y2="37" stroke="#70B860" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+      <rect x="388" y="36" width="96" height="128" rx="26" fill="#C8E8F4" stroke="#4090B0" stroke-width="1.1" opacity="0.7"/>
+      <line x1="400" y1="42" x2="476" y2="42" stroke="#50A8CC" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+      <rect x="448" y="42" width="96" height="128" rx="38" fill="#D0D4F8" stroke="#6060B8" stroke-width="1.0" opacity="0.75"/>
+      <line x1="468" y1="50" x2="534" y2="50" stroke="#7070D0" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+      <ellipse cx="558" cy="106" rx="48" ry="64" fill="#E4D0F0" stroke="#8858A8" stroke-width="0.9" opacity="0.85"/>
+      <path d="M520 60 Q558 46 596 60" fill="none" stroke="#9868B8" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+      <line x1="116" y1="196" x2="558" y2="196" stroke="#c9bfb2" stroke-width="0.5" opacity="0.4"/>
+      <circle cx="116" cy="196" r="2.5" fill="#D4706E" opacity="0.6"/>
+      <circle cx="196" cy="196" r="2.5" fill="#CC7A42" opacity="0.65"/>
+      <circle cx="276" cy="196" r="2.5" fill="#B8962E" opacity="0.7"/>
+      <circle cx="356" cy="196" r="3" fill="#5E9E54" opacity="0.75"/>
+      <circle cx="436" cy="196" r="3" fill="#4090B0" opacity="0.8"/>
+      <circle cx="496" cy="196" r="3" fill="#6060B8" opacity="0.85"/>
+      <circle cx="558" cy="196" r="3.5" fill="#8858A8" opacity="0.9"/>
+    </svg>
+  </div>
+  <h1>gifio</h1>
+  <p class="subtitle">Make a GIF from your photos. A GIF is a short picture that moves and loops, like a flipbook you can text to a friend.</p>
+  <p class="privacy-note">Your photos stay on this device. Nothing is uploaded.</p>
+
+  <!-- Drop Zone -->
+  <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="Choose two or more photos, or drop them here" onkeydown="if(event.key==='Enter')document.getElementById('fileInput').click()">
+    <div class="drop-icon">✦</div>
+    <div class="drop-text">Choose two or more photos</div>
+    <div class="drop-hint">Photos taken a moment apart work best. You can also drag them here.</div>
+    <input type="file" id="fileInput" accept="image/*" multiple class="file-input-overlay">
+  </div>
+  <div id="notice" class="notice" role="status" aria-live="polite" style="display:none"></div>
+  <div id="sampleRow" class="sample-row">
+    <button type="button" id="sampleBtn" class="sample-btn" onclick="makeSampleFrames()">Try it with sample pictures</button>
+    <span class="sample-note">No photos handy? Seven drawings of a dancer, made right here.</span>
+  </div>
+
+  <!-- Title Card -->
+  <div id="titleCardSection" class="title-card-section" style="display:none">
+    <div class="style-header">
+      <span class="style-title">Title frame</span>
+      <label class="toggle-label">
+        <input type="checkbox" id="titleCardCheck" aria-label="Add title card" onchange="toggleTitleCard()">
+        <span class="toggle-text">Add a title</span>
+      </label>
+    </div>
+    <div id="titleCardControls" style="display:none">
+      <input type="text" id="titleText" class="title-input" placeholder="Your title here" oninput="clearResult()" maxlength="60">
+      <input type="text" id="subtitleText" class="title-input subtitle-input" placeholder="Subtitle (optional)" oninput="clearResult()" maxlength="80">
+      <div class="control-options" style="margin-top:8px">
+        <label class="toggle-label" id="faceToggleLabel" style="display:none">
+          <input type="checkbox" id="titleFaceCheck" aria-label="Show subject face on title card" onchange="clearResult()">
+          <span class="toggle-text">Show face</span>
+        </label>
+        <select id="titleStyle" class="loop-select" aria-label="Title card style" onchange="clearResult()">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="warm">Warm</option>
+          <option value="cool">Cool</option>
+          <option value="match">Match first frame</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filmstrip -->
+  <div id="filmstrip" class="filmstrip" style="display:none"></div>
+  <div id="filmstripTools" class="filmstrip-tools" style="display:none">
+    <button type="button" id="selectModeBtn" class="ft-btn" onclick="toggleSelectMode()" data-tip="Select several frames to remove together. Cmd/Ctrl-click and Shift-click work anytime.">Select</button>
+    <span id="selCount" class="ft-count"></span>
+    <button type="button" id="deleteSelBtn" class="ft-btn ft-danger" style="display:none" onclick="deleteSelected()">Delete</button>
+  </div>
+
+  <!-- Preview -->
+  <div id="previewArea" class="preview-area" style="display:none">
+    <img id="previewImg" class="preview-img" alt="Preview">
+    <div class="preview-controls">
+      <button id="playBtn" class="play-btn paused" onclick="togglePlay()">▶ Play</button>
+      <span id="frameCounter" class="frame-counter">Frame 1 of 1</span>
+      <span id="durationEst" class="duration-est"></span>
+      <button class="icon-btn" onclick="reverseFrames()" title="Reverse frame order" aria-label="Reverse frame order" data-tip="Reverses the order of all your frames. Last becomes first.">⇆</button>
+    </div>
+    <div id="smartHint" class="smart-hint" style="display:none"></div>
+  </div>
+
+
+  <!-- Style Presets -->
+  <div id="styleSection" class="style-section" style="display:none">
+    <div class="style-header">
+      <span class="style-title" data-tip="One-click color treatments. Your originals are never modified.">Style</span>
+      <button class="customize-toggle" onclick="toggleCustomize()">Customize ▾</button>
+    </div>
+    <div id="presetPicker" class="preset-picker"></div>
+    <div id="customizePanel" class="customize-panel" style="display:none">
+      <div class="control-row"><label class="control-label" data-tip="Shifts all pixels lighter or darker. Subtle goes a long way.">Brightness</label><input type="range" class="slider" min="-100" max="100" value="0" oninput="setCustom('brightness',+this.value,this)"><span class="control-value">0</span></div>
+      <div class="control-row"><label class="control-label" data-tip="Pushes lights lighter and darks darker. High contrast = dramatic.">Contrast</label><input type="range" class="slider" min="-100" max="100" value="0" oninput="setCustom('contrast',+this.value,this)"><span class="control-value">0</span></div>
+      <div class="control-row"><label class="control-label" data-tip="Color intensity. Negative = muted/B&W. Positive = vivid pop.">Saturation</label><input type="range" class="slider" min="-100" max="100" value="0" oninput="setCustom('saturation',+this.value,this)"><span class="control-value">0</span></div>
+      <div class="control-row"><label class="control-label" data-tip="Shifts between cool blue and warm amber tones.">Warmth</label><input type="range" class="slider" min="-50" max="50" value="0" oninput="setCustom('warmth',+this.value,this)"><span class="control-value">0</span></div>
+      <div class="control-row"><label class="control-label" data-tip="Darkens the edges, drawing focus to the center.">Vignette</label><input type="range" class="slider" min="0" max="100" value="0" oninput="setCustom('vignette',+this.value,this)"><span class="control-value">0</span></div>
+      <div class="control-row"><label class="control-label" data-tip="Adds film grain texture. Subtle amounts feel analog and organic.">Grain</label><input type="range" class="slider" min="0" max="60" value="0" oninput="setCustom('grain',+this.value,this)"><span class="control-value">0</span></div>
+    </div>
+  </div>
+
+
+  <!-- Compositing Elements -->
+  <div id="elemSection" class="elem-section" style="display:none">
+    <div class="style-header">
+      <span class="style-title" data-tip="Animated elements layered over or behind your frames.">Background</span>
+      <select id="elemLayer" class="loop-select" aria-label="Element compositing layer" onchange="clearResult(); if(this.value==='behind' && activeElement!=='none') showHint('Behind only shows through see-through parts of a picture. For photos, use Overlay.')" title="Compositing layer">
+        <option value="overlay">Overlay</option>
+        <option value="behind">Behind</option>
+      </select>
+    </div>
+    <div id="elemPicker" class="preset-picker"></div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls" class="controls" style="display:none">
+    <div class="control-row">
+      <label class="control-label" data-tip="How long each frame shows. Lower = faster. Auto-suggested by frame count.">Speed</label>
+      <input type="range" id="speedSlider" class="slider" min="50" max="2000" step="50" value="400"
+             oninput="speed=+this.value; document.getElementById('speedVal').textContent=this.value+'ms'; restartPlay(); clearResult(); updateDuration(); if($('smartTimingCheck').checked)$('speedVal').textContent=this.value+'ms base'">
+      <span id="speedVal" class="control-value">400ms</span>
+    </div>
+    <div class="control-row" id="frameTimingRow" style="display:none">
+      <label class="control-label" data-tip="Timing for one frame only. Auto follows Speed and Smart timing; 2x and 3x hold the pose.">This frame</label>
+      <div class="mult-chips" id="multChips">
+        <button type="button" data-mult="0.5" onclick="setFrameMult(0.5)">&#189;&#215;</button>
+        <button type="button" data-mult="1" onclick="setFrameMult(1)">auto</button>
+        <button type="button" data-mult="2" onclick="setFrameMult(2)">2&#215;</button>
+        <button type="button" data-mult="3" onclick="setFrameMult(3)">3&#215;</button>
+      </div>
+      <span id="frameTimingVal" class="control-value"></span>
+    </div>
+    <div class="control-row">
+      <label class="control-label" data-tip="Output width in pixels. Larger = sharper but bigger file. 400-600px ideal for sharing.">Size</label>
+      <input type="range" id="sizeSlider" class="slider" min="200" max="1200" step="50" value="800"
+             oninput="outputWidth=+this.value; document.getElementById('sizeVal').textContent=this.value+'px'; clearResult()">
+      <span id="sizeVal" class="control-value">800px</span>
+    </div>
+    <div class="control-row">
+      <label class="control-label" data-tip="Center-crops all frames to this ratio. Square for Instagram, Widescreen for Twitter, Portrait for Stories.">Crop</label>
+      <div class="crop-options" id="cropOptions">
+        <label class="crop-radio active" data-tip="Use your images as-is, no cropping">
+          <input type="radio" name="crop" value="original" checked onchange="setCrop(this.value)">
+          <div class="crop-box crop-original"><span class="crop-icon">↔</span></div>
+          <span class="crop-label">Original</span>
+        </label>
+        <label class="crop-radio" data-tip="1:1 — Instagram posts, profile pictures">
+          <input type="radio" name="crop" value="1:1" onchange="setCrop(this.value)">
+          <div class="crop-box" style="width:32px;height:32px;"></div>
+          <span class="crop-label">1:1</span>
+        </label>
+        <label class="crop-radio" data-tip="4:3 — Classic photo ratio, presentations">
+          <input type="radio" name="crop" value="4:3" onchange="setCrop(this.value)">
+          <div class="crop-box" style="width:36px;height:27px;"></div>
+          <span class="crop-label">4:3</span>
+        </label>
+        <label class="crop-radio" data-tip="16:9 — Twitter headers, YouTube, widescreen">
+          <input type="radio" name="crop" value="16:9" onchange="setCrop(this.value)">
+          <div class="crop-box" style="width:42px;height:24px;"></div>
+          <span class="crop-label">16:9</span>
+        </label>
+        <label class="crop-radio" data-tip="9:16 — Instagram/TikTok Stories, Reels">
+          <input type="radio" name="crop" value="9:16" onchange="setCrop(this.value)">
+          <div class="crop-box" style="width:20px;height:36px;"></div>
+          <span class="crop-label">9:16</span>
+        </label>
+      </div>
+      <select id="cropSelect" style="display:none" aria-hidden="true">
+        <option value="original" selected>Original</option>
+        <option value="1:1">1:1</option>
+        <option value="4:3">4:3</option>
+        <option value="16:9">16:9</option>
+        <option value="9:16">9:16</option>
+      </select>
+    </div>
+    <div class="control-row">
+      <label class="control-label" data-tip="How many times the GIF repeats. Forever is standard.">Loop</label>
+      <div class="control-options">
+        <select id="loopSelect" class="loop-select" onchange="clearResult()">
+          <option value="0" selected>Forever</option>
+          <option value="1">Once</option>
+          <option value="3">3×</option>
+          <option value="5">5×</option>
+        </select>
+        <label class="toggle-label">
+          <input type="checkbox" id="boomerangCheck" onchange="clearResult(); updateDuration(); restartPlay()">
+          <span class="toggle-text" data-tip="Plays forward then backward — that satisfying pendulum. Best with 3-8 frames.">Boomerang</span>
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="ditherCheck" checked onchange="clearResult()">
+          <span class="toggle-text" data-tip="Scatters dots to fake smooth gradients. Almost always better on photos. Off for pixel art.">Dither</span>
+        </label>
+      </div>
+    </div>
+    <div class="control-row">
+      <label class="control-label" data-tip="Fine-tune how the GIF moves through time.">Timing</label>
+      <div class="control-options">
+        <label class="toggle-label">
+          <input type="checkbox" id="smoothLoopCheck" aria-label="Smooth loop transition" onchange="handleSmoothToggle()">
+          <span class="toggle-text" data-tip="Cross-fades last frame into first. The loop point disappears.">Smooth loop</span>
+        </label>
+        <label class="toggle-label" title="Pause on first frame">
+          <input type="checkbox" id="holdFirstCheck" aria-label="Hold on first frame" onchange="clearResult(); updateDuration(); restartPlay()">
+          <span class="toggle-text" data-tip="Pauses 3× longer on first frame. Perfect for reveals.">Hold first</span>
+        </label>
+        <label class="toggle-label" title="Pause on last frame">
+          <input type="checkbox" id="holdLastCheck" aria-label="Hold on last frame" onchange="clearResult(); updateDuration(); restartPlay()">
+          <span class="toggle-text" data-tip="Pauses 3× longer on last frame. Great for punchlines.">Hold last</span>
+        </label>
+        <label class="toggle-label" title="Vary speed by visual change">
+          <input type="checkbox" id="smartTimingCheck" aria-label="Smart timing based on visual difference" onchange="handleSmartTiming()">
+          <span class="toggle-text" data-tip="Varies speed by visual change between frames. Natural rhythm.">Smart timing</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div id="actionRow" class="action-row" style="display:none">
+    <button id="createBtn" class="btn-primary" onclick="generateGif()">✦ Create GIF</button>
+  </div>
+  <div id="progressWrap" class="progress-wrap" style="display:none">
+    <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+    <span id="progressLabel" class="progress-label">Preparing frames...</span>
+  </div>
+
+  <!-- Result -->
+  <div id="resultArea" class="result-area" style="display:none">
+    <img id="resultImg" class="result-img" alt="Your GIF">
+    <div id="resultSize" class="result-size"></div>
+    <div class="result-buttons">
+      <button class="btn-primary" onclick="downloadGif()">Download the GIF</button>
+      <button class="btn-secondary" onclick="resetResult()">Change it and make it again</button>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div id="clearRow" class="clear-row" style="display:none">
+    <button class="btn-ghost" id="clearBtn" onclick="confirmClear(this)">Start over</button>
+  </div>
+
+  <div class="footer">
+    <span class="kbd-hint" id="kbdHint" style="display:none">Keyboard: Space plays and pauses, the arrow keys step one frame</span>
+    <a href="https://github.com/dabirdwell/gifio" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+    <span class="footer-sep" aria-hidden="true"></span>
+    <span class="footer-credit">by <a href="https://humanityandai.com" target="_blank" rel="noopener" class="footer-link">Humanity and AI</a></span>
+    <span class="footer-sep" aria-hidden="true"></span>
+    <span class="ae-mark" title="Made with &#xC6;">&#xC6;</span>
+  </div>
+</div>
+
+<style>
+
+.drop-zone { position: relative; overflow: hidden; }
+.file-input-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; font-size: 0; z-index: 2;
+}
+.drop-zone {
+  border: 2.5px dashed #c9bfb2;
+  border-radius: 18px;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255,255,255,0.35);
+  transition: border-color 0.3s ease, background 0.3s ease, padding 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+.drop-zone.active { border-color: #8b7355; background: rgba(139,115,85,0.07); }
+.drop-zone:focus-visible { outline: 3px solid #8b7355; outline-offset: 2px; }
+button:focus-visible, select:focus-visible, input[type="range"]:focus-visible { outline: 2px solid #8b7355; outline-offset: 2px; }
+.drop-zone.has-frames { padding: 1.2rem; }
+.drop-icon { font-size: 2.8rem; margin-bottom: 10px; opacity: 0.35; transition: transform 0.3s; }
+.drop-zone.active .drop-icon { transform: scale(1.15); }
+.drop-text { font-size: 1.05rem; color: #6b5e52; font-weight: 500; }
+.drop-hint { font-size: 0.82rem; color: #b0a599; margin-top: 6px; }
+
+.filmstrip {
+  touch-action: pan-x;
+  display: flex; gap: 10px; overflow-x: auto; padding: 12px 4px;
+  margin-bottom: 1.5rem; scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+.filmstrip::-webkit-scrollbar { height: 6px; }
+.filmstrip::-webkit-scrollbar-thumb { background: #c9bfb2; border-radius: 3px; }
+.filmstrip::-webkit-scrollbar-track { background: transparent; }
+
+.frame-card {
+  position: relative; border-radius: 12px; overflow: hidden;
+  border: 2.5px solid transparent; background: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08); cursor: grab;
+  flex-shrink: 0; transition: transform 0.25s cubic-bezier(0.2,0.8,0.3,1), border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  user-select: none; -webkit-user-select: none;
+  animation: fadeIn 0.25s ease;
+  will-change: transform;
+}
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.frame-card.active { border-color: #8b7355; box-shadow: 0 3px 14px rgba(139,115,85,0.2); }
+.frame-card.dragging { opacity: 0.35; transform: scale(0.85); transition: opacity 0.15s, transform 0.15s; }
+.frame-card.nudge-right { transform: translateX(14px); }
+.frame-card.nudge-left { transform: translateX(-14px); }
+.filmstrip .insert-marker {
+  position: absolute; top: 4px; bottom: 4px; width: 3px;
+  background: #8b7355; border-radius: 2px;
+  box-shadow: 0 0 8px rgba(139,115,85,0.4);
+  pointer-events: none; z-index: 10;
+  transition: left 0.2s cubic-bezier(0.2,0.8,0.3,1), opacity 0.15s;
+}
+.frame-card img { width: 110px; height: 82px; object-fit: cover; display: block; pointer-events: none; }
+.frame-label {
+  font-size: 0.68rem; color: #9a8e82; text-align: center;
+  padding: 4px 0; font-weight: 500;
+}
+.frame-delete {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(50,40,30,0.6); color: #fff; border: none;
+  cursor: pointer; font-size: 14px; line-height: 22px;
+  text-align: center; opacity: 0; transition: opacity 0.2s;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.frame-card:hover .frame-delete { opacity: 1; }
+
+.preview-area {
+  background: #fff; border-radius: 16px; padding: 18px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+  text-align: center; animation: fadeIn 0.3s ease;
+}
+.preview-img {
+  max-width: 100%; max-height: 420px; border-radius: 10px;
+  object-fit: contain; display: block; margin: 0 auto;
+  transition: opacity 0.15s;
+}
+.preview-controls {
+  margin-top: 12px; display: flex; justify-content: center;
+  align-items: center; gap: 12px;
+}
+.play-btn {
+  font-family: 'Roboto', sans-serif; padding: 7px 18px;
+  border-radius: 8px; border: none; font-size: 0.84rem;
+  cursor: pointer; font-weight: 500; transition: all 0.2s;
+  min-width: 90px;
+}
+.play-btn.playing { background: #e8e0d6; color: #5c4f42; }
+.play-btn.paused { background: #8b7355; color: #fff; }
+.frame-counter { font-size: 0.8rem; color: #9a8e82; }
+.duration-est { font-size: 0.75rem; color: #b0a599; font-style: italic; }
+.smart-hint {
+  font-size: 0.78rem; color: #8b7355; margin-top: 10px;
+  padding: 8px 14px; background: rgba(139,115,85,0.06);
+  border-radius: 8px; border-left: 3px solid rgba(139,115,85,0.3);
+  animation: fadeIn 0.4s ease;
+}
+.icon-btn {
+  font-family: 'Roboto', sans-serif; padding: 6px 12px;
+  border-radius: 8px; border: 1.5px solid #d8cfc4;
+  background: transparent; color: #8b7355; font-size: 0.9rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.icon-btn:hover { background: #f0ebe4; border-color: #8b7355; }
+
+.controls {
+  background: rgba(255,255,255,0.5); border-radius: 16px;
+  padding: 1.5rem 1.8rem; margin-bottom: 1.5rem;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.control-row {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
+}
+.control-row:last-child { margin-bottom: 0; }
+.control-label { font-size: 0.85rem; font-weight: 500; color: #5c4f42; min-width: 50px; }
+.control-value { font-size: 0.8rem; color: #9a8e82; min-width: 55px; text-align: right; }
+.control-options { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.slider {
+  flex: 1; accent-color: #8b7355; height: 6px;
+  -webkit-appearance: none; appearance: none; background: #ddd5ca;
+  border-radius: 3px; outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: #8b7355; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.loop-select {
+  font-family: 'Roboto', sans-serif; padding: 7px 14px;
+  border-radius: 8px; border: 1.5px solid #c9bfb2;
+  background: #fff; color: #5c4f42; font-size: 0.84rem; cursor: pointer;
+}
+.toggle-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.82rem; color: #6b5e52; cursor: pointer;
+}
+.toggle-label input { accent-color: #8b7355; width: 15px; height: 15px; }
+.toggle-text { user-select: none; }
+
+.action-row { text-align: center; margin-bottom: 1rem; }
+.btn-primary {
+  font-family: 'Roboto', sans-serif; padding: 14px 36px;
+  border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #6b5843 0%, #8b7355 100%);
+  color: #fff; font-size: 1rem; font-weight: 500; cursor: pointer;
+  letter-spacing: 0.03em; box-shadow: 0 4px 16px rgba(107,88,67,0.25);
+  transition: transform 0.25s, background 0.25s; -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(107,88,67,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; pointer-events: none; }
+.btn-secondary {
+  font-family: 'Roboto', sans-serif; padding: 14px 28px;
+  border-radius: 12px; border: 1.5px solid #c9bfb2;
+  background: transparent; color: #6b5843; font-size: 0.92rem;
+  font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: #8b7355; background: rgba(139,115,85,0.05); }
+.btn-ghost {
+  font-family: 'Roboto', sans-serif; padding: 10px 20px;
+  border-radius: 10px; border: 1px solid rgba(155,58,40,0.15); background: transparent;
+  color: #9B3A28; font-size: 0.84rem; cursor: pointer; transition: all 0.25s;
+  position: relative;
+}
+.btn-ghost::before {
+  content: '!';
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: rgba(155,58,40,0.1);
+  pointer-events: none;
+  line-height: 1;
+  transition: color 0.3s;
+}
+.btn-ghost:hover { color: #fff; background: #9B3A28; border-color: #9B3A28; }
+.btn-ghost:hover::before { color: rgba(255,255,255,0.12); }
+
+/* Confirmation state — red glitter trace */
+.btn-ghost.confirming {
+  color: #fff; background: #9B3A28; border-color: transparent;
+  z-index: 1;
+}
+.btn-ghost.confirming::before {
+  color: rgba(255,255,255,0.15);
+  font-size: 3.6rem;
+}
+.btn-ghost.confirming::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  background: conic-gradient(
+    from var(--danger-angle, 0deg),
+    transparent 0%,
+    rgba(220,60,40,0.4) 5%,
+    rgba(255,100,60,0.8) 8%,
+    rgba(255,180,80,0.9) 10%,
+    rgba(255,100,60,0.8) 12%,
+    rgba(220,60,40,0.4) 15%,
+    transparent 20%,
+    transparent 50%,
+    rgba(220,60,40,0.3) 55%,
+    rgba(255,120,80,0.6) 57%,
+    rgba(255,200,100,0.7) 59%,
+    rgba(255,120,80,0.6) 61%,
+    rgba(220,60,40,0.3) 63%,
+    transparent 68%,
+    transparent 100%
+  );
+  z-index: -1;
+  animation: dangerTrace 1.8s linear infinite;
+}
+@keyframes dangerTrace {
+  0% { --danger-angle: 0deg; }
+  100% { --danger-angle: 360deg; }
+}
+@property --danger-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes confirmPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155,58,40,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(155,58,40,0); }
+}
+
+.progress-wrap { text-align: center; margin-bottom: 1.5rem; }
+.progress-bar {
+  width: 100%; height: 6px; border-radius: 3px;
+  background: #e0d8ce; overflow: hidden; margin-bottom: 8px;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px; width: 0%;
+  background: linear-gradient(90deg, #8b7355, #a68d6e);
+  transition: width 0.3s ease;
+}
+.progress-label { font-size: 0.82rem; color: #9a8e82; }
+
+.result-area {
+  background: #fff; border-radius: 16px; padding: 22px;
+  text-align: center; box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+  margin-bottom: 1rem; position: relative; overflow: hidden;
+}
+.result-img {
+  max-width: 100%; max-height: 440px; border-radius: 10px;
+  display: block; margin: 0 auto 8px;
+}
+.result-size { font-size: 0.78rem; color: #b0a599; margin-bottom: 16px; }
+.result-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.clear-row { text-align: center; margin-top: 0.5rem; }
+
+/* ═══ Mosaic tile reveal ═══ */
+.reveal-overlay {
+  position: absolute;
+  top: 22px; left: 22px; right: 22px;
+  border-radius: 10px;
+  display: grid;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+  perspective: 800px;
+}
+.reveal-tile {
+  background: #faf6f1;
+  transform-style: preserve-3d;
+  animation: tileFlip 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  animation-delay: var(--delay);
+  backface-visibility: hidden;
+}
+@keyframes tileFlip {
+  0% { transform: rotateY(0deg); opacity: 1; }
+  60% { transform: rotateY(110deg); opacity: 0.6; }
+  100% { transform: rotateY(180deg); opacity: 0; }
+}
+
+.footer {
+  text-align: center; margin-top: 3rem; padding-top: 1.5rem;
+  border-top: 1px solid #ddd5ca;
+}
+.kbd-hint {
+  display: block; font-size: 0.72rem; color: #c0b7ab;
+  margin-bottom: 10px; letter-spacing: 0.03em;
+}
+.footer-link {
+  color: #8b7355; text-decoration: none; font-size: 0.8rem;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: #5c4f42; text-decoration: underline; }
+.footer-sep { color: #d0c8bc; margin: 0 6px; font-size: 0.8rem; }
+.footer-credit { font-size: 0.8rem; color: #9a8e82; }
+
+
+
+
+.title-card-section { margin-bottom: 1rem; animation: fadeIn 0.3s ease; }
+.title-input {
+  font-family: 'Roboto', sans-serif; width: 100%; padding: 10px 14px;
+  border: 1.5px solid #d8cfc4; border-radius: 10px; background: rgba(255,255,255,0.6);
+  color: #3a3530; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  margin-bottom: 6px;
+}
+.title-input:focus { border-color: #8b7355; }
+.title-input::placeholder { color: #c0b7ab; }
+.subtitle-input { font-size: 0.82rem; }
+.elem-section { margin-bottom: 1.5rem; animation: fadeIn 0.3s ease; }
+.elem-chip { flex-shrink: 0; cursor: pointer; text-align: center; user-select: none; }
+.elem-chip canvas {
+  width: 64px; height: 48px; border-radius: 8px; display: block;
+  border: 2px solid transparent; transition: border-color 0.2s;
+  background: #2a2520;
+}
+.elem-chip.active canvas { border-color: #8b7355; }
+.elem-chip:hover canvas { border-color: #c9bfb2; }
+.elem-chip.active:hover canvas { border-color: #8b7355; }
+.elem-chip-label {
+  font-size: 0.62rem; color: #9a8e82; margin-top: 3px;
+  white-space: nowrap; max-width: 68px; overflow: hidden; text-overflow: ellipsis;
+}
+.elem-chip.active .elem-chip-label { color: #5c4f42; font-weight: 500; }
+
+
+.ae-mark {
+  font-family: 'Roboto Serif', Georgia, serif;
+  font-size: 1rem; font-weight: 300; font-style: italic;
+  color: #c9bfb2; cursor: default;
+  transition: color 0.4s;
+}
+.ae-mark:hover { color: #8b7355; }
+.style-section { margin-bottom: 1.5rem; animation: fadeIn 0.3s ease; }
+.style-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.style-title { font-size: 0.85rem; font-weight: 500; color: #5c4f42; }
+.customize-toggle { font-family: 'Roboto', sans-serif; font-size: 0.78rem; color: #9a8e82; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+.customize-toggle:hover { color: #5c4f42; background: rgba(0,0,0,0.04); }
+.preset-picker { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }
+.preset-picker::-webkit-scrollbar { height: 4px; }
+.preset-picker::-webkit-scrollbar-thumb { background: #d8cfc4; border-radius: 2px; }
+.preset-chip { flex-shrink: 0; cursor: pointer; text-align: center; transition: all 0.2s; user-select: none; }
+.preset-chip canvas { width: 64px; height: 48px; border-radius: 8px; display: block; border: 2px solid transparent; transition: border-color 0.2s; }
+.preset-chip.active canvas { border-color: #8b7355; }
+.preset-chip:hover canvas { border-color: #c9bfb2; }
+.preset-chip.active:hover canvas { border-color: #8b7355; }
+.preset-chip-label { font-size: 0.62rem; color: #9a8e82; margin-top: 3px; white-space: nowrap; max-width: 68px; overflow: hidden; text-overflow: ellipsis; }
+.preset-chip.active .preset-chip-label { color: #5c4f42; font-weight: 500; }
+.customize-panel { background: rgba(255,255,255,0.4); border-radius: 12px; padding: 1rem 1.2rem; margin-top: 8px; animation: fadeIn 0.2s ease; }
+.customize-panel .control-row { margin-bottom: 10px; }
+.customize-panel .control-row:last-child { margin-bottom: 0; }
+
+@media (max-width: 600px) {
+  .app { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 2rem; }
+  
+.drop-zone { position: relative; overflow: hidden; }
+.file-input-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; font-size: 0; z-index: 2;
+}
+.drop-zone { padding: 2.5rem 1rem; }
+  .frame-card img { width: 85px; height: 64px; }
+  .controls { padding: 1.2rem; }
+  .control-row { flex-wrap: wrap; gap: 10px; }
+
+  .frame-card { min-width: 85px; }
+  .frame-card img { min-height: 64px; }
+  .frame-delete { width: 28px; height: 28px; font-size: 16px; line-height: 28px; opacity: 0.8; }
+  .play-btn { min-height: 44px; min-width: 44px; }
+  .icon-btn { min-height: 44px; min-width: 44px; }
+  .btn-primary { min-height: 48px; }
+  .btn-secondary { min-height: 48px; }
+  .btn-ghost { min-height: 44px; }
+  .preset-chip canvas { width: 56px; height: 42px; }
+  .elem-chip canvas { width: 56px; height: 42px; }
+  .toggle-label { min-height: 36px; display: flex; align-items: center; }
+  .control-options { gap: 10px; }
+  .loop-select { min-height: 36px; }
+  .title-input { min-height: 44px; font-size: 16px; }
+  .btn-primary { padding: 14px 28px; width: 100%; }
+  .btn-secondary { width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Gifio Enhancement Layer — Æ, May 2026
+   Tooltips · Help · Alive interface
+   ═══════════════════════════════════════════════════════ */
+
+/* ═══ Tooltips ═══ */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3a3530;
+  color: #f0ebe4;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: normal;
+  width: max-content;
+  max-width: 240px;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tipFade 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+[data-tip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #3a3530;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tipFade 0.2s ease;
+}
+@keyframes tipFade { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+
+/* ═══ Crop visual radio buttons ═══ */
+.crop-options {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;
+}
+.crop-radio {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 6px 8px; border-radius: 10px;
+  border: 1.5px solid transparent; transition: all 0.2s;
+  position: relative;
+}
+.crop-radio:hover { background: rgba(139,115,85,0.04); }
+.crop-radio.active {
+  border-color: #8b7355; background: rgba(139,115,85,0.06);
+}
+.crop-radio input { display: none; }
+.crop-box {
+  border: 1.5px solid #c9bfb2; border-radius: 4px;
+  background: rgba(139,115,85,0.04);
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+.crop-radio.active .crop-box {
+  border-color: #8b7355; background: rgba(139,115,85,0.1);
+}
+.crop-original { width: 36px; height: 28px; }
+.crop-icon { font-size: 0.8rem; color: #9a8e82; }
+.crop-label {
+  font-size: 0.66rem; color: #9a8e82; font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.crop-radio.active .crop-label { color: #5c4f42; font-weight: 600; }
+
+/* ═══ Alive interface ═══ */
+
+/* Create button — tracing border glow */
+.btn-primary {
+  position: relative;
+  z-index: 1;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 15px;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    rgba(45,106,79,0.5) 10%,
+    rgba(45,140,90,0.8) 15%,
+    rgba(45,106,79,0.5) 20%,
+    transparent 30%,
+    transparent 100%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s;
+  animation: glowTrace 3s linear infinite;
+}
+.btn-primary:not(:disabled)::before { opacity: 1; }
+.btn-primary:hover::before { opacity: 0; }
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: inherit;
+  z-index: -1;
+}
+@keyframes glowTrace {
+  0% { --glow-angle: 0deg; }
+  100% { --glow-angle: 360deg; }
+}
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Gentle scale pulse replaces old breathe */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+.btn-primary:not(:disabled):not(:hover) {
+  animation: breathe 3s ease-in-out infinite;
+}
+.btn-primary:hover { animation: none; }
+
+/* ═══ 2.5D depth touches ═══ */
+
+/* Control sections lift on hover */
+.control-row {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 10px;
+  padding: 2px 0;
+}
+.control-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+}
+
+/* Style/element chips get depth */
+.preset-chip, .elem-chip {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.preset-chip:hover, .elem-chip:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important;
+}
+.preset-chip:active, .elem-chip:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Preview area has depth layers */
+.preview-area {
+  box-shadow: 0 2px 14px rgba(0,0,0,0.06), 0 8px 30px rgba(0,0,0,0.03);
+}
+
+/* Frame cards lift when hovered */
+.frame-card:hover:not(.dragging) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+/* Drop zone inner shadow for depth */
+.drop-zone {
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+}
+.drop-zone.has-frames {
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+}
+
+/* Help button floats */
+.help-btn {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1), 0 6px 20px rgba(0,0,0,0.05);
+}
+.help-btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 4px 18px rgba(107,88,67,0.3), 0 8px 30px rgba(0,0,0,0.08);
+}
+
+/* Crop radio boxes get subtle 3D feel */
+.crop-box {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.8);
+}
+.crop-radio.active .crop-box {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6), 0 0 8px rgba(139,115,85,0.12);
+}
+.crop-radio:hover .crop-box {
+  transform: scale(1.05);
+  transition: transform 0.15s;
+}
+
+@keyframes dropPulse {
+  0%, 100% { border-color: #c9bfb2; background: rgba(255,255,255,0.35); }
+  50% { border-color: #a08870; background: rgba(139,115,85,0.06); }
+}
+.drop-zone:not(.has-frames) {
+  animation: dropPulse 3s ease-in-out infinite;
+}
+
+@keyframes starSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.drop-zone:not(.has-frames) .drop-icon {
+  animation: starSpin 12s linear infinite;
+}
+
+/* Progress shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.progress-fill {
+  background: linear-gradient(90deg, #8b7355 0%, #a68d6e 30%, #c4a87a 50%, #a68d6e 70%, #8b7355 100%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Toggle glow — warm accent when checked */
+.toggle-label input[type="checkbox"]:checked + .toggle-text {
+  color: #5c4f42;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(139,115,85,0.3);
+  text-decoration: underline;
+  text-decoration-color: rgba(139,115,85,0.3);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  transition: all 0.3s;
+}
+
+/* Preview alive when playing */
+@keyframes previewPulse {
+  0%, 100% { box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+  50% { box-shadow: 0 2px 20px rgba(107,88,67,0.15), 0 0 0 2px rgba(139,115,85,0.08); }
+}
+.preview-area.is-playing {
+  animation: previewPulse 3s ease-in-out infinite;
+}
+
+/* Frame counter shifts subtly while playing */
+@keyframes counterShift {
+  0%, 100% { color: #9a8e82; }
+  50% { color: #6b5843; }
+}
+.preview-area.is-playing .frame-counter {
+  animation: counterShift 3s ease-in-out infinite;
+}
+
+/* Play button glow when playing */
+.play-btn.playing {
+  color: #6b5843;
+  text-shadow: 0 0 6px rgba(139,115,85,0.2);
+}
+
+/* Æ footer mark enhancement */
+.ae-mark {
+  position: relative;
+}
+.ae-mark:hover::after {
+  content: 'frames in motion, meaning in between';
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3a3530;
+  color: #c9bfb2;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  font-style: italic;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: tipFade 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  letter-spacing: 0.03em;
+}
+.ae-mark:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #3a3530;
+  pointer-events: none;
+  animation: tipFade 0.3s ease;
+}
+
+/* Help button */
+.help-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #c9bfb2;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #8b7355;
+  font-family: 'Roboto Serif', serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  font-style: italic;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.help-btn:hover {
+  background: #8b7355;
+  color: #fff;
+  border-color: #8b7355;
+  transform: scale(1.08);
+  box-shadow: 0 4px 18px rgba(107,88,67,0.3);
+}
+
+/* ═══ Help overlay ═══ */
+#helpOverlay {
+  position: fixed; inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background:
+    linear-gradient(180deg, rgba(250,246,241,0.03) 0%, transparent 50%, rgba(250,246,241,0.03) 100%),
+    repeating-linear-gradient(0deg, #f0ebe4 0px, #f0ebe4 48px, #e0d8ce 48px, #e0d8ce 50px),
+    repeating-linear-gradient(90deg, #f0ebe4 0px, #f0ebe4 48px, #e0d8ce 48px, #e0d8ce 50px);
+  background-color: #f0ebe4;
+}
+#helpOverlay.open { display: flex; }
+#helpOverlay::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0px, transparent 48px, rgba(0,0,0,0.04) 48px, rgba(0,0,0,0.04) 50px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 48px, rgba(0,0,0,0.04) 48px, rgba(0,0,0,0.04) 50px);
+  pointer-events: none;
+}
+#helpOverlay::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center top, rgba(200,180,140,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.help-card {
+  position: relative;
+  width: 820px;
+  max-width: 92vw;
+  max-height: 88vh;
+  background: rgba(255,255,252,0.97);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.08), 0 20px 60px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-header {
+  padding: 20px 28px;
+  background: linear-gradient(180deg, #faf6f1 0%, #f0ebe4 100%);
+  border-bottom: 1px solid #ddd5ca;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.help-header h2 {
+  font-family: 'Roboto Serif', serif;
+  font-size: 1.3rem;
+  font-weight: 300;
+  font-style: italic;
+  color: #5c4f42;
+  margin: 0;
+}
+.close-help {
+  width: 34px; height: 34px;
+  background: #e8e0d6;
+  border: 1px solid #d0c8bc;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #8b7355;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Roboto', sans-serif;
+}
+.close-help:hover { background: #5c4f42; border-color: #5c4f42; color: #fff; }
+
+.help-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+  color: #5c4f42;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+.help-body h3 {
+  font-family: 'Roboto Serif', serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  font-style: italic;
+  color: #5c4f42;
+  margin: 28px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid #e8e0d6;
+}
+.help-body h3:first-child { margin-top: 0; }
+
+.help-note {
+  position: relative;
+  background: linear-gradient(180deg, #fdfbf5, #f5f0e5);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #5c4f42;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.06), inset 0 0 30px rgba(0,0,0,0.02);
+}
+.help-note::before {
+  content: '✦';
+  position: absolute;
+  top: -6px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #c9bfb2;
+}
+.help-note .sig {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: #9a8e82;
+  text-align: right;
+  font-style: italic;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.help-item {
+  padding: 14px 16px;
+  background: #faf8f5;
+  border: 1px solid #e8e4de;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.help-item:hover {
+  background: rgba(139,115,85,0.04);
+  border-color: #c9bfb2;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+.help-item h4 {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5c4f42;
+  margin: 0 0 4px;
+}
+.help-item p {
+  font-size: 0.74rem;
+  color: #8b7e72;
+  margin: 0;
+  line-height: 1.5;
+}
+.help-item .try { color: #6a8a4a; font-weight: 500; }
+.help-item .avoid { color: #a06040; font-weight: 500; }
+
+.help-footer {
+  padding: 14px 28px;
+  background: #f5f2ed;
+  border-top: 1px solid #e0dbd4;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #9a8e82;
+}
+.help-footer kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #fff;
+  border: 1px solid #d0c8bc;
+  border-radius: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.68rem;
+  margin: 0 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+@media (max-width: 600px) {
+  .help-grid { grid-template-columns: 1fr; }
+  .help-body { padding: 18px 20px; }
+  .help-btn { bottom: 14px; right: 14px; width: 38px; height: 38px; font-size: 1.1rem; }
+}
+
+.filmstrip-tools{display:flex;align-items:center;gap:.6rem;margin:.5rem 0 0}
+.ft-btn{font:inherit;font-size:.82rem;padding:.3rem .85rem;border-radius:16px;border:1.5px solid #8b7355;background:#fff;color:#8b7355;cursor:pointer;transition:background .15s,color .15s}
+.ft-btn.on,.ft-btn:hover{background:#8b7355;color:#fff}
+.ft-danger{border-color:#a85442;color:#a85442}
+.ft-danger:hover{background:#a85442;color:#fff}
+.ft-count{font-size:.85rem;color:#8b7355;opacity:.85}
+.frame-card.selected{border-color:#8b7355;box-shadow:0 0 0 3px rgba(139,115,85,.25)}
+.frame-check{position:absolute;top:5px;left:5px;width:19px;height:19px;border-radius:50%;background:#8b7355;color:#fff;font-size:12px;line-height:19px;text-align:center;display:none;pointer-events:none}
+.frame-card.selected .frame-check{display:block}
+.frame-mult{position:absolute;bottom:5px;right:5px;background:rgba(60,45,30,.75);color:#ffe1a8;font-size:10px;font-weight:600;padding:1px 5px;border-radius:5px;pointer-events:none}
+.mult-chips{display:flex;gap:.4rem;flex:1}
+.mult-chips button{font:inherit;font-size:.8rem;padding:.28rem .7rem;border-radius:14px;border:1.5px solid rgba(139,115,85,.5);background:#fff;color:#6b5a45;cursor:pointer}
+.mult-chips button.on{background:#8b7355;border-color:#8b7355;color:#fff}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// Gifio — State & UI
+// ═══════════════════════════════════════════════════════
+
+let frames = [];
+let speed = 400, outputWidth = 800, previewIdx = 0;
+// Styled-preview cache: frame N under style S is identical every loop, so
+// render it once. Key covers everything that changes pixels; framesVersion
+// bumps on same-length reorders (reverse/move) the key can't see.
+let framesVersion = 0;
+let previewCache = { key: '', urls: [] };
+// Multi-select + per-frame timing freedom
+let selectedFrames = new Set();
+let selectMode = false;
+let lastSelAnchor = null;
+function previewStyleKey() {
+  const crop = $('cropSelect') ? $('cropSelect').value : 'original';
+  return [activePreset, activeElement, JSON.stringify(customValues), crop, frames.length, framesVersion].join('|');
+}
+let playing = false, playInterval = null;
+let gifBlobUrl = null, gifBlobSize = 0;
+let dragSrcIdx = null;
+
+const $ = id => document.getElementById(id);
+
+// --- File handling ---
+$('fileInput').addEventListener('change', e => loadImages(e.target.files));
+const dz = $('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('active'); });
+dz.addEventListener('dragleave', () => { dz.classList.remove('active'); const fi = $('fileInput'); if (fi) fi.style.pointerEvents = ''; });
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('active'); loadImages(e.dataTransfer.files); });
+
+// Detect desktop for keyboard hint
+if (!('ontouchstart' in window)) $('kbdHint').style.display = 'block';
+
+
+// ═══ iOS/iPad drag-and-drop compatibility ═══
+// The file input overlay blocks drag events. Toggle it off during drags.
+document.addEventListener('dragenter', function(e) {
+  const fi = $('fileInput');
+  if (fi) fi.style.pointerEvents = 'none';
+});
+document.addEventListener('dragend', function() {
+  const fi = $('fileInput');
+  if (fi) fi.style.pointerEvents = '';
+});
+document.addEventListener('drop', function() {
+  setTimeout(function() {
+    const fi = $('fileInput');
+    if (fi) fi.style.pointerEvents = '';
+  }, 100);
+});
+// Also restore on dragleave from the drop zone
+
+
+// Adapt copy for touch devices
+if ('ontouchstart' in window) {
+  const dt = dz.querySelector('.drop-text');
+  if (dt) dt.textContent = 'Tap to choose two or more photos';
+}
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (frames.length === 0) return;
+  // Don't intercept when typing in inputs
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight') { e.preventDefault(); stopPlay(); previewIdx = (previewIdx + 1) % frames.length; showFrame(previewIdx); renderFilmstrip(); updateFrameTiming(); }
+  if (e.code === 'ArrowLeft') { e.preventDefault(); stopPlay(); previewIdx = (previewIdx - 1 + frames.length) % frames.length; showFrame(previewIdx); renderFilmstrip(); updateFrameTiming(); }
+  if ((e.code === 'Delete' || e.code === 'Backspace') && selectedFrames.size) { e.preventDefault(); deleteSelected(); }
+  if (e.code === 'Escape' && (selectMode || selectedFrames.size)) { e.preventDefault(); clearSelection(); }
+});
+
+// Tell the person, in plain words, when a file could not be used.
+function showNotice(text) {
+  const el = $('notice'); if (!el) return;
+  el.textContent = text;
+  el.style.display = text ? 'block' : 'none';
+}
+function skippedMessage(names) {
+  if (!names.length) return '';
+  const list = names.length <= 3 ? names.join(', ') : names.slice(0, 3).join(', ') + ' and ' + (names.length - 3) + ' more';
+  return 'This browser could not open ' + list + '. Gifio works with JPG, PNG, WebP and GIF pictures. ' +
+    'An iPhone photo (HEIC) opens in Safari; in other browsers, export it as JPG first.';
+}
+
+function loadImages(fileList) {
+  const all = [...fileList];
+  const imgs = all.filter(f => f.type.startsWith('image/') || /\.(heic|heif|avif)$/i.test(f.name));
+  const skipped = all.filter(f => !imgs.includes(f)).map(f => f.name);
+  showNotice('');
+  if (!imgs.length) { showNotice(skippedMessage(skipped)); return; }
+  imgs.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+  let loaded = 0;
+  const batch = [];
+  // Blob URLs, not readAsDataURL: no base64 encode of the whole file, no
+  // giant strings held in memory, the browser streams straight from disk.
+  // Decode cost is the only inherent cost; this removes the rest.
+  function done() {
+    if (++loaded !== imgs.length) return;
+    batch.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+    frames = frames.concat(batch);
+    showNotice(skippedMessage(skipped));
+    if (!frames.length) return;
+    previewIdx = 0;
+    clearResult();
+    smartDefaults();
+    updateUI();
+    updateSelectionBar();
+    updateFrameTiming();
+    startPlay();
+  }
+  imgs.forEach(file => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { batch.push({img, name: file.name, src: url}); done(); };
+    // A corrupt file used to hang the load gate forever; now it's skipped.
+    img.onerror = () => { URL.revokeObjectURL(url); skipped.push(file.name); done(); };
+    img.src = url;
+  });
+}
+
+function reverseFrames() {
+  frames.reverse();
+  framesVersion++;
+  selectedFrames.clear(); lastSelAnchor = null; updateSelectionBar();
+  clearResult();
+  updateUI();
+}
+
+function clearResult() {
+  if (gifBlobUrl) { URL.revokeObjectURL(gifBlobUrl); gifBlobUrl = null; gifBlobSize = 0; }
+}
+
+// ═══════════════════════════════════════════════════════
+// Quiet intelligence — the app just "gets it"
+// ═══════════════════════════════════════════════════════
+
+let smartName = 'animation';
+let downloadCounts = {};   // Track downloads per name to prevent collisions
+let hintShown = false;
+
+function smartDefaults() {
+  if (!frames.length) return;
+
+  // Smart speed: fewer frames want more dwell time
+  const n = frames.length;
+  let suggested;
+  if (n <= 3) suggested = 800;
+  else if (n <= 5) suggested = 600;
+  else if (n <= 8) suggested = 450;
+  else if (n <= 15) suggested = 350;
+  else if (n <= 25) suggested = 250;
+  else suggested = 200;
+  speed = suggested;
+  $('speedSlider').value = suggested;
+  $('speedVal').textContent = suggested + 'ms';
+
+  // Smart size: don't upscale small images
+  const nativeW = frames[0].img.naturalWidth;
+  if (nativeW < 800) {
+    outputWidth = Math.max(200, Math.round(nativeW / 50) * 50);
+  } else if (nativeW >= 3000) {
+    outputWidth = 800;
+  } else {
+    outputWidth = Math.min(1200, Math.round(nativeW / 2 / 50) * 50);
+  }
+  $('sizeSlider').value = outputWidth;
+  $('sizeVal').textContent = outputWidth + 'px';
+
+  // Smart filename: find common prefix
+  smartName = deriveFilename();
+
+  // Intelligence: detect photo content and color characteristics
+  if (!hintShown && nativeW >= 1500) {
+    const sc = document.createElement('canvas');
+    const sw = 100, sh = Math.round(100 * frames[0].img.naturalHeight / frames[0].img.naturalWidth);
+    sc.width = sw; sc.height = sh;
+    const sx = sc.getContext('2d');
+    sx.drawImage(frames[0].img, 0, 0, sw, sh);
+    const sd = sx.getImageData(0, 0, sw, sh).data;
+    let satSum = 0, samples = 0;
+    for (let i = 0; i < sd.length; i += 16) {
+      const mx = Math.max(sd[i], sd[i+1], sd[i+2]);
+      const mn = Math.min(sd[i], sd[i+1], sd[i+2]);
+      satSum += mx > 0 ? (mx - mn) / mx : 0;
+      samples++;
+    }
+    if (satSum / samples < 0.08) {
+      showHint('These look black and white. Try the Film noir or Cyanotype style.');
+    } else {
+      showHint('Dither is on, which keeps the colors in photos smooth.');
+    }
+    hintShown = true;
+  }
+
+  updateDuration();
+
+  // Intelligence: suggest smooth loop for longer sequences
+  if (frames.length >= 5 && !$('smoothLoopCheck').checked) {
+    setTimeout(() => showHint('Tip: Smooth loop hides the jump from the last frame back to the first.'), 4000);
+  }
+  // Intelligence: suggest backgrounds for smaller frame counts
+  if (frames.length >= 2 && frames.length <= 5 && activeElement === 'none') {
+    setTimeout(() => showHint('Tip: try a background, like Fireflies or Snow.'), 7000);
+  }
+  // Intelligence: suggest square crop for portrait-oriented images
+  const imgRatio = frames[0].img.naturalWidth / frames[0].img.naturalHeight;
+  if (imgRatio < 0.8 && $('cropSelect') && $('cropSelect').value === 'original') {
+    setTimeout(() => showHint('Tall photos? Try the 1:1 or 4:3 crop.'), 9000);
+  }
+
+  // Detect faces for title card (silent — never breaks the experience)
+  try { detectFace().catch(() => {}); } catch(e) {}
+
+  // Re-analyze frame differences if smart timing is on
+  if ($('smartTimingCheck').checked) {
+    frameDiffs = analyzeFrameDifferences();
+  }
+}
+
+function deriveFilename() {
+  const names = frames.map(f => f.name.replace(/\.[^.]+$/, ''));
+  if (names.length === 1) return sanitize(names[0]);
+
+  // Find longest common prefix
+  let prefix = names[0];
+  for (let i = 1; i < names.length; i++) {
+    while (!names[i].startsWith(prefix) && prefix.length > 0) {
+      prefix = prefix.slice(0, -1);
+    }
+  }
+  prefix = prefix.replace(/[\s\-_.,]+$/, '').replace(/\d+$/, '').replace(/[\s\-_.,]+$/, '');
+  if (prefix.length >= 3) return sanitize(prefix);
+  return sanitize(names[0].replace(/[\s\-_]*\d+[\s\-_]*(of[\s\-_]*\d+)?$/i, ''));
+}
+
+function sanitize(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'animation';
+}
+
+function getDownloadFilename() {
+  // First download of a name is clean. Second+ gets a suffix.
+  if (!downloadCounts[smartName]) {
+    downloadCounts[smartName] = 1;
+    return smartName + '.gif';
+  }
+  downloadCounts[smartName]++;
+  return smartName + '-' + downloadCounts[smartName] + '.gif';
+}
+
+function showHint(text) {
+  const el = $('smartHint');
+  el.textContent = text;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = '1'; }, 500); }, 6000);
+}
+
+function updateDuration() {
+  const n = frames.length;
+  if (n < 2) { $('durationEst').textContent = ''; return; }
+  let frameCount = n;
+  if ($('boomerangCheck').checked && n > 2) frameCount = n + (n - 2);
+  let totalMs;
+  if ($('smartTimingCheck').checked && frameDiffs.length > 0) {
+    const smartDelays = computeSmartDelays(frameDiffs, speed);
+    totalMs = smartDelays.reduce((s, d) => s + d, 0);
+    if ($('boomerangCheck').checked && frameCount > frames.length) {
+      // Add mirrored delays for boomerang portion
+      const revDelays = smartDelays.slice(1, -1).reverse();
+      totalMs += revDelays.reduce((s, d) => s + d, 0);
+    }
+  } else {
+    totalMs = frameCount * speed;
+  }
+  if ($('smoothLoopCheck').checked && !$('boomerangCheck').checked && frameCount >= 4) totalMs += 3 * speed;
+  if ($('titleCardCheck') && $('titleCardCheck').checked && $('titleText') && $('titleText').value.trim()) totalMs += speed * 3;
+  if ($('holdFirstCheck').checked) totalMs += 2 * speed;
+  if ($('holdLastCheck').checked) totalMs += 2 * speed;
+  const sec = (totalMs / 1000).toFixed(1);
+  $('durationEst').textContent = '~' + sec + 's per loop';
+}
+
+function updateUI() {
+  const has = frames.length > 0, can = frames.length >= 2;
+  if (has) {
+    dz.classList.add('has-frames');
+    dz.querySelector('.drop-icon').style.display = 'none';
+    dz.querySelector('.drop-text').style.display = 'none';
+    dz.querySelector('.drop-hint').textContent = '+ Add more photos';
+  } else {
+    dz.classList.remove('has-frames');
+    dz.querySelector('.drop-icon').style.display = '';
+    dz.querySelector('.drop-text').style.display = '';
+    dz.querySelector('.drop-hint').textContent = 'Photos taken a moment apart work best. You can also drag them here.';
+  }
+  $('filmstrip').style.display = has ? 'flex' : 'none';
+  renderFilmstrip();
+  $('previewArea').style.display = has ? '' : 'none';
+  if (has) showFrame(previewIdx);
+  $('controls').style.display = has ? '' : 'none';
+  $('styleSection').style.display = has ? '' : 'none';
+  $('elemSection').style.display = has ? '' : 'none';
+  $('titleCardSection').style.display = has ? '' : 'none';
+  if (has) { renderPresets(); renderElements(); }
+  // One picture is a start, not a dead end: say what the next step is.
+  $('actionRow').style.display = has && !gifBlobUrl ? '' : 'none';
+  $('createBtn').disabled = !can;
+  $('createBtn').textContent = can ? 'Make the GIF' : 'Add one more picture to make a GIF';
+  $('clearRow').style.display = has && !gifBlobUrl ? '' : 'none';
+  if ($('sampleRow')) $('sampleRow').style.display = has ? 'none' : '';
+  $('progressWrap').style.display = 'none';
+  $('resultArea').style.display = gifBlobUrl ? '' : 'none';
+  if (gifBlobUrl) {
+    $('resultImg').src = gifBlobUrl;
+    $('resultSize').textContent = formatBytes(gifBlobSize);
+  }
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+// Playback touches the filmstrip dozens of times a second; rebuilding its
+// whole DOM each tick was the jank. This just moves the active ring.
+function highlightFilmstrip(idx) {
+  const s = $('filmstrip'); if (!s) return;
+  s.querySelectorAll('.frame-card').forEach(c => c.classList.toggle('active', +c.dataset.idx === idx));
+}
+
+function renderFilmstrip() {
+  const s = $('filmstrip'); s.innerHTML = '';
+  // Insert marker — glowing vertical line
+  let marker = document.createElement('div');
+  marker.className = 'insert-marker';
+  marker.style.opacity = '0';
+  marker.style.left = '0px';
+  s.appendChild(marker);
+
+  let insertIdx = -1;
+
+  frames.forEach((f, i) => {
+    const c = document.createElement('div');
+    c.className = 'frame-card' + (i === previewIdx ? ' active' : '') + (selectedFrames.has(i) ? ' selected' : '');
+    c.draggable = true;
+    c.dataset.idx = i;
+    const multBadge = (f.durMult && f.durMult !== 1) ? `<div class="frame-mult">${f.durMult}&#215;</div>` : '';
+    c.innerHTML = `<img src="${f.src}" alt="${f.name}"><div class="frame-label">${i+1}</div><div class="frame-check">&#10003;</div>${multBadge}<button class="frame-delete" aria-label="Remove frame ${i+1}" onclick="event.stopPropagation();removeFrame(${i})">×</button>`;
+    c.onclick = (e) => {
+      if (selectMode || e.metaKey || e.ctrlKey || e.shiftKey) {
+        if (e.shiftKey && lastSelAnchor != null) {
+          const [a,b] = [Math.min(lastSelAnchor, i), Math.max(lastSelAnchor, i)];
+          for (let k = a; k <= b; k++) selectedFrames.add(k);
+        } else {
+          selectedFrames.has(i) ? selectedFrames.delete(i) : selectedFrames.add(i);
+          lastSelAnchor = i;
+        }
+        renderFilmstrip(); updateSelectionBar();
+        return;
+      }
+      previewIdx = i; stopPlay(); showFrame(i); highlightFilmstrip(i); updateFrameTiming();
+    };
+
+    c.ondragstart = e => {
+      dragSrcIdx = i;
+      c.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      // Ghost image
+      e.dataTransfer.setDragImage(c, c.offsetWidth / 2, c.offsetHeight / 2);
+    };
+    c.ondragend = () => {
+      dragSrcIdx = null;
+      insertIdx = -1;
+      renderFilmstrip();
+    };
+    s.appendChild(c);
+  });
+
+  // Container-level drag: calculate insertion from cursor position
+  s.ondragover = e => {
+    e.preventDefault();
+    if (dragSrcIdx === null) return;
+    const cards = Array.from(s.querySelectorAll('.frame-card'));
+    const scrollLeft = s.scrollLeft;
+    const mouseX = e.clientX - s.getBoundingClientRect().left + scrollLeft;
+
+    // Find insertion index based on card midpoints
+    let newInsertIdx = frames.length;
+    for (let i = 0; i < cards.length; i++) {
+      const cardLeft = cards[i].offsetLeft;
+      const cardMid = cardLeft + cards[i].offsetWidth / 2;
+      if (mouseX < cardMid) { newInsertIdx = i; break; }
+    }
+
+    if (newInsertIdx === insertIdx) return; // no change
+    insertIdx = newInsertIdx;
+
+    // Apply nudge classes
+    cards.forEach((card, i) => {
+      card.classList.remove('nudge-left', 'nudge-right');
+      if (i === dragSrcIdx) return; // dragged card stays put
+      // Cards need to make room at insertIdx
+      if (dragSrcIdx < insertIdx) {
+        // Dragging right: cards between src+1 and insert-1 shift left
+        if (i > dragSrcIdx && i < insertIdx) card.classList.add('nudge-left');
+      } else if (dragSrcIdx > insertIdx) {
+        // Dragging left: cards between insert and src-1 shift right
+        if (i >= insertIdx && i < dragSrcIdx) card.classList.add('nudge-right');
+      }
+    });
+
+    // Position insert marker
+    if (insertIdx !== dragSrcIdx && insertIdx !== dragSrcIdx + 1) {
+      marker.style.opacity = '1';
+      if (insertIdx < cards.length) {
+        marker.style.left = (cards[insertIdx].offsetLeft - 7) + 'px';
+      } else {
+        const lastCard = cards[cards.length - 1];
+        marker.style.left = (lastCard.offsetLeft + lastCard.offsetWidth + 3) + 'px';
+      }
+    } else {
+      marker.style.opacity = '0';
+    }
+  };
+
+  s.ondragleave = e => {
+    // Only clear if leaving the filmstrip entirely
+    if (!s.contains(e.relatedTarget)) {
+      const cards = s.querySelectorAll('.frame-card');
+      cards.forEach(c => c.classList.remove('nudge-left', 'nudge-right'));
+      marker.style.opacity = '0';
+      insertIdx = -1;
+    }
+  };
+
+  s.ondrop = e => {
+    e.preventDefault();
+    if (dragSrcIdx === null || insertIdx < 0) return;
+    // Convert visual insert position to actual move
+    let to = insertIdx;
+    if (dragSrcIdx < to) to--; // adjust because source removal shifts indices
+    if (dragSrcIdx !== to) moveFrame(dragSrcIdx, to);
+    dragSrcIdx = null;
+    insertIdx = -1;
+  };
+
+  // Auto-scroll filmstrip only (not the page) to keep active frame visible
+  const activeCard = s.querySelector('.frame-card.active');
+  if (activeCard && playing) {
+    const cardLeft = activeCard.offsetLeft;
+    const cardWidth = activeCard.offsetWidth;
+    const stripWidth = s.clientWidth;
+    const cardCenter = cardLeft + cardWidth / 2;
+    const targetScroll = cardCenter - stripWidth / 2;
+    s.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  }
+}
+
+function moveFrame(from, to) {
+  const [item] = frames.splice(from, 1);
+  frames.splice(to, 0, item);
+  framesVersion++;
+  selectedFrames.clear(); lastSelAnchor = null; updateSelectionBar();
+  clearResult(); updateUI();
+}
+
+function removeFrame(idx) {
+  const [gone] = frames.splice(idx, 1);
+  if (gone && gone.src && gone.src.startsWith('blob:')) URL.revokeObjectURL(gone.src);
+  previewIdx = Math.min(previewIdx, Math.max(0, frames.length - 1));
+  selectedFrames.clear(); lastSelAnchor = null;
+  clearResult(); updateUI(); updateSelectionBar(); updateFrameTiming();
+  if (frames.length < 2) stopPlay();
+}
+
+// --- Multi-select: pick several frames, remove them together ---
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  if (!selectMode) { selectedFrames.clear(); lastSelAnchor = null; }
+  renderFilmstrip(); updateSelectionBar();
+}
+function clearSelection() {
+  selectMode = false; selectedFrames.clear(); lastSelAnchor = null;
+  renderFilmstrip(); updateSelectionBar();
+}
+function updateSelectionBar() {
+  const bar = $('filmstripTools'); if (!bar) return;
+  bar.style.display = frames.length >= 2 ? 'flex' : 'none';
+  const btn = $('selectModeBtn'), del = $('deleteSelBtn'), cnt = $('selCount');
+  const n = selectedFrames.size;
+  btn.textContent = selectMode || n ? 'Done' : 'Select';
+  btn.classList.toggle('on', selectMode);
+  btn.onclick = selectMode || n ? clearSelection : toggleSelectMode;
+  cnt.textContent = n ? `${n} selected` : '';
+  del.style.display = n ? '' : 'none';
+  del.textContent = n > 1 ? `Delete ${n} frames` : 'Delete frame';
+}
+function deleteSelected() {
+  const n = selectedFrames.size;
+  if (!n) return;
+  if (!window.confirm(`Remove ${n} frame${n > 1 ? 's' : ''}?`)) return;
+  [...selectedFrames].sort((a, b) => b - a).forEach(i => {
+    const [gone] = frames.splice(i, 1);
+    if (gone && gone.src && gone.src.startsWith('blob:')) URL.revokeObjectURL(gone.src);
+  });
+  selectedFrames.clear(); lastSelAnchor = null; selectMode = false;
+  previewIdx = Math.min(previewIdx, Math.max(0, frames.length - 1));
+  clearResult(); updateUI(); updateSelectionBar(); updateFrameTiming();
+  if (frames.length < 2) stopPlay();
+}
+
+// --- Per-frame timing freedom: one frame can run at its own pace ---
+function setFrameMult(m) {
+  const f = frames[previewIdx]; if (!f) return;
+  if (m === 1) delete f.durMult; else f.durMult = m;
+  restartPlay(); clearResult(); renderFilmstrip(); updateFrameTiming();
+}
+function updateFrameTiming() {
+  const row = $('frameTimingRow'); if (!row) return;
+  row.style.display = frames.length ? '' : 'none';
+  if (!frames.length) return;
+  const cur = (frames[previewIdx] && frames[previewIdx].durMult) || 1;
+  document.querySelectorAll('#multChips button').forEach(b => b.classList.toggle('on', +b.dataset.mult === cur));
+  $('frameTimingVal').textContent = `frame ${previewIdx + 1}`;
+}
+
+function clearAll() {
+  frames.forEach(f => { if (f.src && f.src.startsWith('blob:')) URL.revokeObjectURL(f.src); });
+  frames = []; previewIdx = 0; smartName = 'animation'; selectedFrames.clear(); selectMode = false; lastSelAnchor = null; updateSelectionBar(); updateFrameTiming(); activePreset = 'original'; customValues = {brightness:0,contrast:0,saturation:0,warmth:0,vignette:0,grain:0}; if($('smoothLoopCheck'))$('smoothLoopCheck').checked=false; if($('holdFirstCheck'))$('holdFirstCheck').checked=false; if($('holdLastCheck'))$('holdLastCheck').checked=false; if($('smartTimingCheck'))$('smartTimingCheck').checked=false; frameDiffs=[]; activeElement='none'; if($('titleCardCheck'))$('titleCardCheck').checked=false; if($('titleCardControls'))$('titleCardControls').style.display='none'; if($('titleText'))$('titleText').value=''; detectedFace=null; if($('subtitleText'))$('subtitleText').value=''; if($('cropSelect'))$('cropSelect').value='original'; if(typeof setCrop==='function')setCrop('original'); clearResult(); stopPlay(); updateUI();
+  showNotice('');
+  // Reset the clear button state
+  const btn = $('clearBtn');
+  if (btn) { btn.classList.remove('confirming'); btn.textContent = 'Start over'; }
+}
+
+let clearConfirmTimer = null;
+function confirmClear(btn) {
+  if (btn.classList.contains('confirming')) {
+    // Second click — actually clear
+    if (clearConfirmTimer) { clearTimeout(clearConfirmTimer); clearConfirmTimer = null; }
+    clearAll();
+  } else {
+    // First click — ask for confirmation
+    btn.classList.add('confirming');
+    btn.textContent = 'Yes, start over';
+    // Auto-reset after 3 seconds
+    clearConfirmTimer = setTimeout(() => {
+      btn.classList.remove('confirming');
+      btn.textContent = 'Start over';
+      clearConfirmTimer = null;
+    }, 3000);
+  }
+}
+
+function showFrame(idx) {
+  if (!frames.length) return;
+  idx = Math.max(0, Math.min(idx, frames.length - 1));
+  previewIdx = idx;
+  const hasStyle = activePreset !== 'original' || activeElement !== 'none' || Object.values(customValues).some(v => v !== 0);
+  if (hasStyle) {
+    const cacheKey = previewStyleKey();
+    if (previewCache.key !== cacheKey) previewCache = { key: cacheKey, urls: new Array(frames.length) };
+    if (previewCache.urls[idx]) {
+      $('previewImg').src = previewCache.urls[idx];
+      $('frameCounter').textContent = `Frame ${idx+1} of ${frames.length}`;
+      return;
+    }
+    const img = frames[idx].img;
+    const w = Math.min(img.naturalWidth, 600);
+    const cropV = $('cropSelect') ? $('cropSelect').value : 'original';
+    let h;
+    if (cropV === 'original') {
+      h = Math.round(w * img.naturalHeight / img.naturalWidth);
+    } else {
+      const [cw2, ch2] = cropV.split(':').map(Number);
+      h = Math.round(w * ch2 / cw2);
+    }
+    presetCanvas.width = w; presetCanvas.height = h;
+    // Composite: behind element → frame → style → overlay element
+    compositeElement(presetCtx, w, h, idx, frames.length, 'behind');
+    // Center-crop preview
+    const sw = img.naturalWidth, sh = img.naturalHeight;
+    const srcR = sw / sh, dstR = w / h;
+    let sx = 0, sy = 0, sW = sw, sH = sh;
+    if (srcR > dstR) { sW = sh * dstR; sx = (sw - sW) / 2; }
+    else { sH = sw / dstR; sy = (sh - sH) / 2; }
+    presetCtx.drawImage(img, sx, sy, sW, sH, 0, 0, w, h);
+    const imgData = presetCtx.getImageData(0, 0, w, h);
+    applyStyle(imgData.data, w, h, idx, frames.length);
+    presetCtx.putImageData(imgData, 0, 0);
+    compositeElement(presetCtx, w, h, idx, frames.length, 'overlay');
+    const styledUrl = presetCanvas.toDataURL();
+    previewCache.urls[idx] = styledUrl;
+    $('previewImg').src = styledUrl;
+  } else {
+    $('previewImg').src = frames[idx].src;
+  }
+  $('frameCounter').textContent = `Frame ${idx+1} of ${frames.length}`;
+}
+
+function startPlay() {
+  if (frames.length < 2) return;
+  playing = true;
+  $('playBtn').textContent = '❚❚ Pause';
+  $('playBtn').className = 'play-btn playing';
+  $('previewArea').classList.add('is-playing');
+  if (playInterval) clearTimeout(playInterval);
+
+  // Build playback sequence accounting for boomerang
+  function getSequence() {
+    const seq = frames.map((_, i) => i);
+    if ($('boomerangCheck').checked && frames.length > 2) {
+      for (let i = frames.length - 2; i > 0; i--) seq.push(i);
+    }
+    return seq;
+  }
+
+  // Get delay for a position in the sequence
+  function getDelay(seqIdx, seq) {
+    const frameIdx = seq[seqIdx];
+    const isFirst = frameIdx === 0;
+    const isLast = frameIdx === frames.length - 1;
+    let d = (typeof liveDelays !== 'undefined' && liveDelays && liveDelays[frameIdx] != null)
+      ? liveDelays[frameIdx] : speed;
+    const fm = frames[frameIdx] && frames[frameIdx].durMult;
+    if (fm && fm !== 1) d = Math.round(d * fm);
+    if (isFirst && $('holdFirstCheck').checked) d = d * 3;
+    if (isLast && $('holdLastCheck').checked) d = d * 3;
+    const boom = $('boomerangCheck').checked && frames.length > 2;
+    if (boom) {
+      const turnPos = frames.length - 1;
+      if (seqIdx === turnPos) d = Math.round(d * 1.8);
+      else if (seqIdx === turnPos - 1 || seqIdx === turnPos + 1) d = Math.round(d * 1.3);
+      if (seqIdx === seq.length - 1) d = Math.round(d * 1.4);
+    }
+    return d;
+  }
+
+  const seq = getSequence();
+  // Preview timing now mirrors export: smart-timing per-frame delays when on,
+  // plus the boomerang turn ease (x1.8 at the turn, x1.3 beside it, x1.4 at
+  // the seam) so what plays is what ships.
+  const liveDelays = ($('smartTimingCheck').checked && frameDiffs.length > 0)
+    ? computeSmartDelays(frameDiffs, speed) : null;
+  let seqPos = 0;
+
+  function tick() {
+    seqPos = (seqPos + 1) % seq.length;
+    previewIdx = seq[seqPos];
+    showFrame(previewIdx);
+    highlightFilmstrip(previewIdx);
+    // Show sequence-aware counter
+    const boomerang = $('boomerangCheck').checked && frames.length > 2;
+    const label = boomerang
+      ? `Frame ${seqPos+1} of ${seq.length}`
+      : `Frame ${previewIdx+1} of ${frames.length}`;
+    $('frameCounter').textContent = label;
+    playInterval = setTimeout(tick, getDelay(seqPos, seq));
+  }
+
+  playInterval = setTimeout(tick, getDelay(seqPos, seq));
+}
+
+function stopPlay() {
+  playing = false;
+  $('playBtn').textContent = '▶ Play';
+  $('playBtn').className = 'play-btn paused';
+  $('previewArea').classList.remove('is-playing');
+  if (playInterval) { clearTimeout(playInterval); playInterval = null; }
+  // Restore original frame counter
+  if (frames.length) $('frameCounter').textContent = `Frame ${previewIdx+1} of ${frames.length}`;
+}
+
+function togglePlay() { playing ? stopPlay() : startPlay(); }
+function restartPlay() { if (playing) startPlay(); }
+function resetResult() { clearResult(); updateUI(); startPlay(); }
+
+
+// ═══════════════════════════════════════════════════════
+// Style presets — one-click looks
+// ═══════════════════════════════════════════════════════
+
+let activePreset = 'original';
+let customValues = { brightness:0, contrast:0, saturation:0, warmth:0, vignette:0, grain:0 };
+const presetCanvas = document.createElement('canvas');
+const presetCtx = presetCanvas.getContext('2d');
+
+const PRESETS = {
+  original:      { name: 'Original', desc: "Your images untouched. Add adjustments with Customize if you want.",      fn: null },
+  filmNoir:      { name: 'Film noir', desc: "Classic black & white with cool shadows and edge darkening. Dramatic.",     fn: (d, w, h) => { grayscale(d); adjustContrast(d, 55); adjustBrightness(d, -5); tint(d, -3, -2, 5); if(w&&h) addVignette(d, w, h, 40); } },
+  silverGelatin: { name: 'Silver', desc: "Gentle grayscale with lifted shadows. Vintage photography feel.",        fn: (d) => { grayscale(d); adjustContrast(d, 15); adjustBrightness(d, 5); } },
+  sepia:         { name: 'Sepia', desc: "Warm brown tone over grayscale. Nostalgia and old photographs.",         fn: (d) => { grayscale(d); tint(d, 40, 20, -15); } },
+  cyanotype:     { name: 'Cyanotype', desc: "Deep blueprint blue. Historical printmaking process feel.",     fn: (d) => { grayscale(d); tint(d, -25, -3, 45); adjustContrast(d, 20); adjustBrightness(d, -8); } },
+  faded:         { name: 'Faded', desc: "Washed-out, low contrast. Like a photo left in the sun. Memory, distance.",         fn: (d) => { adjustContrast(d, -20); adjustBrightness(d, 15); tint(d, 8, 6, -4); } },
+  goldenHour:    { name: 'Golden hour', desc: "Warm amber light. That magic-hour glow before sunset.",   fn: (d) => { tint(d, 25, 10, -15); adjustContrast(d, 10); adjustBrightness(d, 8); } },
+  midnight:      { name: 'Midnight', desc: "Deep cool shadows with edge vignette. Mystery and drama.",      fn: (d, w, h) => { tint(d, -18, -8, 25); adjustContrast(d, 20); adjustBrightness(d, -25); if(w&&h) addVignette(d, w, h, 35); } },
+  overcast:      { name: 'Overcast', desc: "Muted colors, flat light. Quiet and contemplative.",      fn: (d) => { adjustSaturation(d, -50); adjustContrast(d, -10); adjustBrightness(d, 5); } },
+  candy:         { name: 'Candy', desc: "Boosted color pop with warm shift. Playful and vivid.",         fn: (d) => { adjustSaturation(d, 45); adjustContrast(d, 12); adjustBrightness(d, 5); tint(d, 5, 0, -3); } },
+  rainbow:       { name: 'Rainbow', desc: "Hue rotates through the color wheel across frames. Psychedelic.",       type: 'perframe', fn: (d, i, n) => { hueRotate(d, (i / n) * 360); } },
+  sunset:        { name: 'Sunset drift', desc: "Colors drift from warm to cool across frames. Time passing.",  type: 'perframe', fn: (d, i, n) => { const t = i/(n-1||1); tint(d, Math.round(30-50*t), Math.round(15-25*t), Math.round(-20+45*t)); } },
+  neon:          { name: 'Neon pulse', desc: "Hyper-saturated alternating hues. Electric and energetic.",    type: 'perframe', fn: (d, i, n) => { adjustSaturation(d, 40); hueRotate(d, (i/n)*180 + (i%2)*180); } },
+};
+
+// ═══ Pixel math ═══
+
+function grayscale(d) {
+  for (let i = 0; i < d.length; i += 4) {
+    const l = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+    d[i] = d[i+1] = d[i+2] = l;
+  }
+}
+
+function adjustBrightness(d, v) {
+  const a = v * 2.55;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = Math.max(0, Math.min(255, d[i] + a));
+    d[i+1] = Math.max(0, Math.min(255, d[i+1] + a));
+    d[i+2] = Math.max(0, Math.min(255, d[i+2] + a));
+  }
+}
+
+function adjustContrast(d, v) {
+  const f = (259 * (v + 255)) / (255 * (259 - v));
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = Math.max(0, Math.min(255, f * (d[i] - 128) + 128));
+    d[i+1] = Math.max(0, Math.min(255, f * (d[i+1] - 128) + 128));
+    d[i+2] = Math.max(0, Math.min(255, f * (d[i+2] - 128) + 128));
+  }
+}
+
+function adjustSaturation(d, v) {
+  const a = 1 + v / 100;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+    d[i]   = Math.max(0, Math.min(255, gray + a * (d[i] - gray)));
+    d[i+1] = Math.max(0, Math.min(255, gray + a * (d[i+1] - gray)));
+    d[i+2] = Math.max(0, Math.min(255, gray + a * (d[i+2] - gray)));
+  }
+}
+
+function tint(d, r, g, b) {
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = Math.max(0, Math.min(255, d[i] + r));
+    d[i+1] = Math.max(0, Math.min(255, d[i+1] + g));
+    d[i+2] = Math.max(0, Math.min(255, d[i+2] + b));
+  }
+}
+
+function hueRotate(d, deg) {
+  const rad = deg * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const m = [
+    0.213+0.787*cos-0.213*sin, 0.715-0.715*cos-0.715*sin, 0.072-0.072*cos+0.928*sin,
+    0.213-0.213*cos+0.143*sin, 0.715+0.285*cos+0.140*sin, 0.072-0.072*cos-0.283*sin,
+    0.213-0.213*cos-0.787*sin, 0.715-0.715*cos+0.715*sin, 0.072+0.928*cos+0.072*sin,
+  ];
+  for (let i = 0; i < d.length; i += 4) {
+    const r=d[i], g=d[i+1], b=d[i+2];
+    d[i]   = Math.max(0, Math.min(255, m[0]*r + m[1]*g + m[2]*b));
+    d[i+1] = Math.max(0, Math.min(255, m[3]*r + m[4]*g + m[5]*b));
+    d[i+2] = Math.max(0, Math.min(255, m[6]*r + m[7]*g + m[8]*b));
+  }
+}
+
+function addVignette(d, w, h, strength) {
+  const cx = w/2, cy = h/2, maxR = Math.sqrt(cx*cx + cy*cy);
+  const s = strength / 100;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = x-cx, dy = y-cy;
+      const dist = Math.sqrt(dx*dx + dy*dy) / maxR;
+      const darken = 1 - dist * dist * s;
+      const i = (y*w+x)*4;
+      d[i]   *= darken; d[i+1] *= darken; d[i+2] *= darken;
+    }
+  }
+}
+
+function addGrain(d, amount) {
+  const s = amount * 0.8;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (Math.random() - 0.5) * s;
+    d[i]   = Math.max(0, Math.min(255, d[i] + n));
+    d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+    d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+  }
+}
+
+
+// ═══ Apply style to pixel data ═══
+
+function applyStyle(data, w, h, frameIdx, totalFrames) {
+  const p = PRESETS[activePreset];
+  if (!p || !p.fn) {
+    // Even with 'original', apply custom adjustments if any are set
+  } else if (p.type === 'perframe') {
+    p.fn(data, frameIdx, totalFrames, w, h);
+  } else {
+    p.fn(data, w, h);
+  }
+  // Apply custom adjustments on top
+  if (customValues.brightness !== 0) adjustBrightness(data, customValues.brightness);
+  if (customValues.contrast !== 0) adjustContrast(data, customValues.contrast);
+  if (customValues.saturation !== 0) adjustSaturation(data, customValues.saturation);
+  if (customValues.warmth !== 0) tint(data, customValues.warmth, Math.round(customValues.warmth*0.4), -customValues.warmth);
+  if (customValues.vignette > 0) addVignette(data, w, h, customValues.vignette);
+  if (customValues.grain > 0) addGrain(data, customValues.grain);
+}
+
+function renderPresetThumbnail(canvas, img, presetKey, frameIdx, totalFrames) {
+  const tw = 128, th = 96;
+  canvas.width = tw; canvas.height = th;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, tw, th);
+  const p = PRESETS[presetKey];
+  if (p && p.fn) {
+    const imgData = ctx.getImageData(0, 0, tw, th);
+    if (p.type === 'perframe') {
+      p.fn(imgData.data, frameIdx || 0, totalFrames || 1, tw, th);
+    } else {
+      p.fn(imgData.data, tw, th);
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+}
+
+function renderPresets() {
+  const picker = $('presetPicker');
+  picker.innerHTML = '';
+  if (!frames.length) return;
+  const img = frames[previewIdx].img;
+  Object.keys(PRESETS).forEach(key => {
+    const chip = document.createElement('div');
+    chip.className = 'preset-chip' + (key === activePreset ? ' active' : '');
+    const cvs = document.createElement('canvas');
+    renderPresetThumbnail(cvs, img, key, previewIdx, frames.length);
+    const label = document.createElement('div');
+    label.className = 'preset-chip-label';
+    label.textContent = PRESETS[key].name;
+    if (PRESETS[key].desc) chip.setAttribute('data-tip', PRESETS[key].desc);
+    chip.appendChild(cvs);
+    chip.appendChild(label);
+    chip.onclick = () => { selectPreset(key); };
+    picker.appendChild(chip);
+  });
+}
+
+function selectPreset(key) {
+  activePreset = key;
+  clearResult();
+  renderPresets();
+  showFrame(previewIdx);
+  // Quiet intelligence: suggest dither off for B&W presets
+  if (['filmNoir','silverGelatin','cyanotype'].includes(key) && $('ditherCheck').checked) {
+    showHint('Black and white styles often look crisper with Dither off.');
+  }
+}
+
+
+function handleSmoothToggle() {
+  if ($('smoothLoopCheck').checked && $('boomerangCheck').checked) {
+    showHint('Boomerang already loops smoothly, so Smooth loop works best without it.');
+  }
+  clearResult(); updateDuration();
+}
+
+function toggleCustomize() {
+  const panel = $('customizePanel');
+  const btn = document.querySelector('.customize-toggle');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? '' : 'none';
+  btn.textContent = open ? 'Customize ▴' : 'Customize ▾';
+}
+
+function setCustom(key, val, input) {
+  customValues[key] = val;
+  input.nextElementSibling.textContent = val;
+  clearResult();
+  showFrame(previewIdx);
+}
+
+
+// ═══════════════════════════════════════════════════════
+// Loop & timing intelligence
+// ═══════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════
+// Smart timing — vary speed by visual difference
+// ═══════════════════════════════════════════════════════
+
+let frameDiffs = []; // Cached difference scores between adjacent frames
+
+function analyzeFrameDifferences() {
+  // Compare adjacent frames, return array of difference scores (0-1)
+  if (frames.length < 2) return [];
+  const diffs = [];
+  const sampleCanvas = document.createElement('canvas');
+  const sw = 80, sh = 60; // Small sample for speed
+  sampleCanvas.width = sw; sampleCanvas.height = sh;
+  const ctx = sampleCanvas.getContext('2d');
+  
+  // Get pixel data for each frame at sample resolution
+  const frameData = [];
+  for (const f of frames) {
+    ctx.clearRect(0, 0, sw, sh);
+    ctx.drawImage(f.img, 0, 0, sw, sh);
+    frameData.push(ctx.getImageData(0, 0, sw, sh).data);
+  }
+  
+  // Compare each pair
+  for (let i = 0; i < frameData.length - 1; i++) {
+    const a = frameData[i], b = frameData[i + 1];
+    let totalDiff = 0;
+    const pixels = sw * sh;
+    for (let p = 0; p < a.length; p += 4) {
+      const dr = Math.abs(a[p] - b[p]);
+      const dg = Math.abs(a[p+1] - b[p+1]);
+      const db = Math.abs(a[p+2] - b[p+2]);
+      totalDiff += (dr + dg + db) / 3;
+    }
+    diffs.push(totalDiff / pixels / 255); // Normalize to 0-1
+  }
+  
+  return diffs;
+}
+
+function computeSmartDelays(diffs, baseDelay) {
+  // Map difference scores to delays
+  // Higher difference → longer delay (let the eye absorb)
+  // Lower difference → shorter delay (move through quickly)
+  if (!diffs.length) return [];
+  
+  const minDiff = Math.min(...diffs);
+  const maxDiff = Math.max(...diffs);
+  const range = maxDiff - minDiff;
+  
+  const delays = [];
+  for (let i = 0; i < diffs.length; i++) {
+    if (range < 0.005) {
+      // All frames very similar — uniform timing
+      delays.push(baseDelay);
+    } else {
+      // Normalize to 0-1, then map to 0.5x-1.8x base delay
+      const normalized = (diffs[i] - minDiff) / range;
+      const multiplier = 0.5 + normalized * 1.3;
+      delays.push(Math.round(baseDelay * multiplier));
+    }
+  }
+  // Last frame gets base delay (no "next frame" to compare against)
+  delays.push(baseDelay);
+  
+  return delays;
+}
+
+function handleSmartTiming() {
+  clearResult();
+  if ($('smartTimingCheck').checked && frames.length >= 3) {
+    frameDiffs = analyzeFrameDifferences();
+    const range = frameDiffs.length ? Math.max(...frameDiffs) - Math.min(...frameDiffs) : 0;
+    if (range < 0.005) {
+      showHint('These frames are very alike, so Smart timing will not change much.');
+    } else {
+      const fastest = Math.round(speed * 0.5);
+      const slowest = Math.round(speed * 1.8);
+      showHint('Smart timing is on: frames will show for ' + (fastest/1000).toFixed(2) + ' to ' + (slowest/1000).toFixed(2) + ' seconds each, longer where more changes.');
+    }
+  }
+  restartPlay();
+  updateDuration();
+}
+
+
+// ═══════════════════════════════════════════════════════
+// Background compositing — procedural visual elements
+// ═══════════════════════════════════════════════════════
+
+let activeElement = 'none';
+// Seeded random for consistent particle positions across renders
+function seededRandom(seed) { let s = seed; return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; }; }
+
+const ELEMENTS = {
+  none: { name: 'None', render: null },
+
+  sunrise: { name: 'Sunrise', desc: 'Warm sky gradient with a rising sun. Tints your image golden as frames progress.', render: (ctx, w, h, fi, n) => {
+    const t = fi / (n - 1 || 1);
+    // Sky gradient darkens at bottom
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    const r = Math.round(25 + 200 * t), g = Math.round(15 + 120 * t), b = Math.round(60 + 80 * (1-t));
+    skyGrad.addColorStop(0, `rgb(${r},${g},${Math.min(255,b+80)})`);
+    skyGrad.addColorStop(1, `rgb(${Math.max(0,r-40)},${Math.max(0,g-30)},${Math.max(0,b-20)})`);
+    ctx.globalAlpha = 0.35; ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1;
+    // Sun rises from bottom
+    const sunY = h * (1.1 - t * 0.8);
+    const sunR = w * 0.06;
+    const glow = ctx.createRadialGradient(w*0.7, sunY, sunR*0.5, w*0.7, sunY, sunR*4);
+    glow.addColorStop(0, `rgba(255,220,100,${0.35*t})`);
+    glow.addColorStop(1, 'rgba(255,220,100,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
+    ctx.beginPath(); ctx.arc(w*0.7, sunY, sunR, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,240,180,${0.5*t})`; ctx.fill();
+  }},
+
+  moonrise: { name: 'Moonrise', desc: 'Night sky with stars and crescent moon. Adds a cool, dreamy atmosphere.', render: (ctx, w, h, fi, n) => {
+    const t = fi / (n - 1 || 1);
+    // Night sky
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = `rgb(${Math.round(8+10*t)},${Math.round(10+15*t)},${Math.round(30+20*t)})`;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+    // Stars
+    const rng = seededRandom(42);
+    for (let i = 0; i < 40; i++) {
+      const sx = rng() * w, sy = rng() * h * 0.7;
+      const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(fi * 0.5 + i));
+      ctx.beginPath(); ctx.arc(sx, sy, 1 + rng(), 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,240,${twinkle * 0.7})`; ctx.fill();
+    }
+    // Moon arc
+    const moonY = h * (0.9 - t * 0.6);
+    const moonR = w * 0.04;
+    const moonGlow = ctx.createRadialGradient(w*0.3, moonY, moonR, w*0.3, moonY, moonR*5);
+    moonGlow.addColorStop(0, 'rgba(200,210,240,0.3)');
+    moonGlow.addColorStop(1, 'rgba(200,210,240,0)');
+    ctx.fillStyle = moonGlow; ctx.fillRect(0, 0, w, h);
+    ctx.beginPath(); ctx.arc(w*0.3, moonY, moonR, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(230,235,250,0.9)'; ctx.fill();
+    // Crescent shadow
+    ctx.beginPath(); ctx.arc(w*0.3 + moonR*0.4, moonY - moonR*0.1, moonR*0.85, 0, Math.PI*2);
+    ctx.globalAlpha = 0.4; ctx.fillStyle = `rgb(${Math.round(8+10*t)},${Math.round(10+15*t)},${Math.round(30+20*t)})`; ctx.fill(); ctx.globalAlpha = 1;
+  }},
+
+  rain: { name: 'Rain', desc: 'Falling rain streaks. Subtle and moody — works on almost anything.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(fi * 1000 + 7);
+    for (let i = 0; i < 80; i++) {
+      const x = rng() * w;
+      const y = (rng() * h * 1.3 + fi * h * 0.15) % (h * 1.1) - h * 0.1;
+      const len = 8 + rng() * 14;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 1, y + len);
+      ctx.strokeStyle = 'rgba(180,200,220,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }},
+
+  snow: { name: 'Snow', desc: 'Drifting snowflakes with gentle sway. Peaceful winter feel.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(99);
+    for (let i = 0; i < 50; i++) {
+      const baseX = rng() * w, baseY = rng() * h;
+      const drift = Math.sin(fi * 0.3 + i * 0.7) * 8;
+      const fall = (fi * h * 0.08 + baseY) % (h * 1.2) - h * 0.1;
+      const r = 1.5 + rng() * 2.5;
+      ctx.beginPath(); ctx.arc(baseX + drift, fall, r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.4 + rng()*0.4})`; ctx.fill();
+    }
+  }},
+
+  sparkle: { name: 'Sparkle', desc: 'Twinkling star-crosses that pulse in and out. Adds magic.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(123);
+    for (let i = 0; i < 25; i++) {
+      const x = rng() * w, y = rng() * h;
+      const phase = Math.sin(fi * 0.8 + i * 2.1);
+      if (phase > 0.3) {
+        const size = 2 + phase * 3;
+        const alpha = (phase - 0.3) * 1.2;
+        ctx.beginPath(); ctx.moveTo(x, y-size); ctx.lineTo(x, y+size);
+        ctx.strokeStyle = `rgba(255,255,230,${alpha})`; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x-size, y); ctx.lineTo(x+size, y);
+        ctx.stroke();
+      }
+    }
+  }},
+
+  confetti: { name: 'Confetti', desc: 'Falling colorful confetti. Great for celebrations and birthdays.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(fi * 500 + 55);
+    const colors = ['#E8807E','#E89050','#D4AC38','#70B860','#50A8CC','#7070D0','#9868B8'];
+    for (let i = 0; i < 30; i++) {
+      const x = rng() * w;
+      const y = (rng() * h * 1.5 + fi * h * 0.1) % (h * 1.3) - h * 0.15;
+      const rot = rng() * Math.PI;
+      const size = 3 + rng() * 5;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot + fi * 0.2);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.globalAlpha = 0.6 + rng() * 0.3;
+      ctx.fillRect(-size/2, -size/4, size, size/2);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }},
+
+  gradient: { name: 'Color sweep', desc: 'Shifting color wash that cycles hues across frames.', render: (ctx, w, h, fi, n) => {
+    const hue = (fi / (n || 1)) * 360;
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, `hsla(${hue},60%,50%,0.25)`);
+    grad.addColorStop(1, `hsla(${(hue+60)%360},60%,40%,0.2)`);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+  }},
+
+  fireflies: { name: 'Fireflies', desc: 'Warm floating lights that drift and pulse. Beautiful on dark or nature photos.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(77);
+    for (let i = 0; i < 20; i++) {
+      const baseX = rng() * w, baseY = rng() * h;
+      const driftX = Math.sin(fi * 0.4 + i * 1.7) * 12;
+      const driftY = Math.cos(fi * 0.3 + i * 2.3) * 8;
+      const pulse = Math.max(0, Math.sin(fi * 0.6 + i * 1.9));
+      if (pulse > 0.2) {
+        const x = baseX + driftX, y = baseY + driftY;
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, 6 + pulse * 4);
+        glow.addColorStop(0, `rgba(255,240,140,${pulse * 0.7})`);
+        glow.addColorStop(1, 'rgba(255,240,140,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(x - 12, y - 12, 24, 24);
+        ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,250,200,${pulse})`; ctx.fill();
+      }
+    }
+  }},
+
+  aurora: { name: 'Aurora', desc: 'Northern lights that ripple across the top. Ethereal and subtle.', render: (ctx, w, h, fi, n) => {
+    const t = fi / (n - 1 || 1);
+    for (let band = 0; band < 4; band++) {
+      ctx.beginPath();
+      const yBase = h * 0.2 + band * h * 0.12;
+      ctx.moveTo(0, yBase);
+      for (let x = 0; x <= w; x += 10) {
+        const wave = Math.sin(x * 0.008 + fi * 0.5 + band * 1.5) * 20
+                   + Math.sin(x * 0.015 + fi * 0.3 + band) * 12;
+        ctx.lineTo(x, yBase + wave);
+      }
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      const hue = 120 + band * 40 + t * 30;
+      ctx.fillStyle = `hsla(${hue},70%,50%,${0.08 - band * 0.015})`;
+      ctx.fill();
+    }
+  }},
+
+  hearts: { name: 'Hearts', desc: 'Floating hearts in warm tones. Sweet for love, family, celebrations.', render: (ctx, w, h, fi, n) => {
+    const rng = seededRandom(fi * 300 + 22);
+    const colors = ['#E8807E','#D4537E','#ED93B1','#F4C0D1','#CC7A42'];
+    for (let i = 0; i < 12; i++) {
+      const x = rng() * w;
+      const y = (rng() * h * 1.4 - fi * h * 0.08) % (h * 1.2);
+      const size = 4 + rng() * 8;
+      const rot = (rng() - 0.5) * 0.5;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.moveTo(0, size * 0.3);
+      ctx.bezierCurveTo(-size * 0.5, -size * 0.3, -size, size * 0.1, 0, size);
+      ctx.bezierCurveTo(size, size * 0.1, size * 0.5, -size * 0.3, 0, size * 0.3);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.globalAlpha = 0.5 + rng() * 0.3;
+      ctx.fill(); ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }},
+};
+
+
+// ═══ Element picker UI ═══
+
+function renderElements() {
+  const picker = $('elemPicker');
+  picker.innerHTML = '';
+  Object.keys(ELEMENTS).forEach(key => {
+    const chip = document.createElement('div');
+    chip.className = 'elem-chip' + (key === activeElement ? ' active' : '');
+    const cvs = document.createElement('canvas');
+    cvs.width = 128; cvs.height = 96;
+    const ctx = cvs.getContext('2d');
+    // Dark bg for element preview
+    ctx.fillStyle = '#1e1a16'; ctx.fillRect(0, 0, 128, 96);
+    const el = ELEMENTS[key];
+    if (el.render) el.render(ctx, 128, 96, 2, 7);
+    const label = document.createElement('div');
+    label.className = 'elem-chip-label';
+    label.textContent = el.name;
+    if (el.desc) chip.setAttribute('data-tip', el.desc);
+    chip.appendChild(cvs);
+    chip.appendChild(label);
+    chip.onclick = () => selectElement(key);
+    picker.appendChild(chip);
+  });
+}
+
+function selectElement(key) {
+  activeElement = key;
+  clearResult();
+  renderElements();
+  showFrame(previewIdx);
+  // Intelligence: hint about behind vs overlay for opaque images
+  if (key !== 'none' && $('elemLayer').value === 'behind') {
+    showHint('Behind only shows through see-through parts of a picture. For photos, use Overlay.');
+  }
+}
+
+function compositeElement(ctx, w, h, frameIdx, totalFrames, layer) {
+  const el = ELEMENTS[activeElement];
+  if (!el || !el.render) return;
+  const target = $('elemLayer') ? $('elemLayer').value : 'overlay';
+  if (target !== layer) return;
+  
+  // Save context, render element, restore
+  ctx.save();
+  if (layer === 'overlay') ctx.globalAlpha = 0.7;
+  el.render(ctx, w, h, frameIdx, totalFrames);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+
+// ═══════════════════════════════════════════════════════
+// Title card generation
+// ═══════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════
+// Face detection for title cards (Chrome Shape Detection API)
+// ═══════════════════════════════════════════════════════
+
+let detectedFace = null; // { x, y, width, height } from first frame
+let faceSupported = false;
+
+async function detectFace() {
+  // Tier 1: Chrome FaceDetector API (instant, no load)
+  if ('FaceDetector' in window) {
+    try {
+      const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 3 });
+      const faces = await detector.detect(frames[0].img);
+      if (faces.length) {
+        faces.sort((a, b) => (b.boundingBox.width * b.boundingBox.height) -
+                             (a.boundingBox.width * a.boundingBox.height));
+        const bb = faces[0].boundingBox;
+        detectedFace = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+        faceSupported = true;
+        $('faceToggleLabel').style.display = '';
+        $('titleFaceCheck').checked = true;
+        return detectedFace;
+      }
+    } catch(e) { /* fall through to MediaPipe */ }
+  }
+
+  // Tier 2: MediaPipe BlazeFace (cross-browser, CDN)
+  try {
+    if (!window._mpVision) {
+      const { FilesetResolver, FaceDetector: MPFace } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/+esm');
+      const resolver = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm');
+      window._mpVision = await MPFace.createFromOptions(resolver, {
+        baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' },
+        runningMode: 'IMAGE'
+      });
+    }
+    const result = window._mpVision.detect(frames[0].img);
+    if (result.detections && result.detections.length) {
+      result.detections.sort((a, b) =>
+        (b.boundingBox.width * b.boundingBox.height) - (a.boundingBox.width * a.boundingBox.height));
+      const bb = result.detections[0].boundingBox;
+      detectedFace = { x: bb.originX, y: bb.originY, width: bb.width, height: bb.height };
+      faceSupported = true;
+      $('faceToggleLabel').style.display = '';
+      $('titleFaceCheck').checked = true;
+      return detectedFace;
+    }
+  } catch(e) { console.log('MediaPipe face detection unavailable:', e); }
+
+  return null;
+}
+
+function renderFaceOnTitle(ctx, w, h, face, srcImg) {
+  try {
+  if (!face || !srcImg || !$('titleFaceCheck') || !$('titleFaceCheck').checked) return;
+
+  // Expand the crop region for head + shoulders
+  const pad = face.width * 0.6;
+  let fx = face.x - pad, fy = face.y - pad * 1.2;
+  let fw = face.width + pad * 2, fh = face.height + pad * 2.4;
+  // Clamp to source bounds
+  const sw = srcImg.naturalWidth, sh = srcImg.naturalHeight;
+  fx = Math.max(0, fx); fy = Math.max(0, fy);
+  fw = Math.min(fw, sw - fx); fh = Math.min(fh, sh - fy);
+
+  // Draw circular portrait
+  const size = Math.min(w, h) * 0.28;
+  const cx = w * 0.5, cy = h * 0.38;
+
+  ctx.save();
+  // Circular clip
+  ctx.beginPath();
+  ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+  ctx.clip();
+  // Draw face region into circle
+  ctx.drawImage(srcImg, fx, fy, fw, fh,
+                cx - size/2, cy - size/2, size, size);
+  // Stylize: high contrast + slight desaturation
+  const imgData = ctx.getImageData(cx - size/2, cy - size/2, size, size);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    // Desaturate 40%
+    const gray = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+    d[i]   = gray + (d[i] - gray) * 0.6;
+    d[i+1] = gray + (d[i+1] - gray) * 0.6;
+    d[i+2] = gray + (d[i+2] - gray) * 0.6;
+    // Boost contrast
+    const f = 1.3;
+    d[i]   = Math.max(0, Math.min(255, f * (d[i] - 128) + 128));
+    d[i+1] = Math.max(0, Math.min(255, f * (d[i+1] - 128) + 128));
+    d[i+2] = Math.max(0, Math.min(255, f * (d[i+2] - 128) + 128));
+  }
+  ctx.putImageData(imgData, cx - size/2, cy - size/2);
+  ctx.restore();
+
+  // Subtle ring around the portrait
+  ctx.beginPath();
+  ctx.arc(cx, cy, size / 2 + 1.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  } catch(e) { /* silent */ }
+}
+
+function toggleTitleCard() {
+  // Intelligence: auto-enable Hold First for title cards
+  if ($('titleCardCheck').checked && !$('holdFirstCheck').checked) {
+    $('holdFirstCheck').checked = true;
+    showHint('Hold first is on, so your title stays up a little longer.');
+  }
+  const on = $('titleCardCheck').checked;
+  $('titleCardControls').style.display = on ? '' : 'none';
+  if (on && !$('titleText').value) $('titleText').focus();
+  clearResult();
+  updateDuration();
+}
+
+function generateTitleFrame(w, h) {
+  const text = $('titleText').value.trim();
+  if (!text) return null;
+  const subtitle = $('subtitleText').value.trim();
+  const style = $('titleStyle').value;
+
+  const cvs = document.createElement('canvas');
+  cvs.width = w; cvs.height = h;
+  const ctx = cvs.getContext('2d');
+
+  // Background
+  const bgs = {
+    dark:  ['#1e1a16', '#f0ebe4', '#c9bfb2'],
+    light: ['#faf6f1', '#3a3530', '#8b7355'],
+    warm:  ['#2a1f14', '#f0d0a0', '#c0a070'],
+    cool:  ['#0e1520', '#c0d8e8', '#7098b8'],
+  };
+
+  if (style === 'match' && frames.length > 0) {
+    // Sample first frame's dominant tone
+    ctx.drawImage(frames[0].img, 0, 0, w, h);
+    const sample = ctx.getImageData(0, 0, w, h).data;
+    let rSum=0, gSum=0, bSum=0, count=0;
+    for (let i=0; i<sample.length; i+=64) {
+      rSum+=sample[i]; gSum+=sample[i+1]; bSum+=sample[i+2]; count++;
+    }
+    const r=Math.round(rSum/count), g=Math.round(gSum/count), b=Math.round(bSum/count);
+    // Darken for background, lighten for text
+    ctx.fillStyle = `rgb(${Math.round(r*0.3)},${Math.round(g*0.3)},${Math.round(b*0.3)})`;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = `rgb(${Math.min(255,r+120)},${Math.min(255,g+120)},${Math.min(255,b+120)})`;
+  } else {
+    const [bg, fg, sub] = bgs[style] || bgs.dark;
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = fg;
+  }
+
+  // Title text — shift down when face portrait is shown
+  const hasFace = detectedFace && $('titleFaceCheck') && $('titleFaceCheck').checked;
+  const titleSize = Math.max(16, Math.min(w * 0.06, 42));
+  ctx.font = `300 italic ${titleSize}px Fraunces, Georgia, serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const ty = hasFace ? (subtitle ? h * 0.68 : h * 0.72) : (subtitle ? h * 0.44 : h * 0.5);
+  ctx.fillText(text, w/2, ty, w * 0.85);
+
+  // Subtitle
+  if (subtitle) {
+    const subColor = style === 'match' ? ctx.fillStyle :
+      (bgs[style] || bgs.dark)[2];
+    ctx.fillStyle = subColor;
+    const subSize = Math.max(12, titleSize * 0.5);
+    ctx.font = `400 ${subSize}px "DM Sans", sans-serif`;
+    ctx.fillText(subtitle, w/2, hasFace ? h * 0.78 : h * 0.56, w * 0.85);
+  }
+
+  // Render face portrait if detected
+  try { if (detectedFace && frames.length > 0) renderFaceOnTitle(ctx, w, h, detectedFace, frames[0].img); } catch(e) {}
+
+  // Shift text down when face is shown
+  // (already positioned, face renders in upper area)
+
+  // Create image from canvas
+  const img = new Image();
+  img.src = cvs.toDataURL();
+  img.width = w; img.height = h;
+  return img;
+}
+
+async function buildTimingPlan(imgList) {
+  // Returns { images: [...], delays: [...] } with per-frame timing
+  let images = [...imgList];
+  const baseDelay = speed;
+  let delays;
+  if ($('smartTimingCheck').checked && frameDiffs.length > 0) {
+    delays = computeSmartDelays(frameDiffs, baseDelay);
+    // If boomerang added frames, mirror the delays too
+    if (images.length > frameDiffs.length + 1) {
+      const origDelays = delays.slice();
+      const revDelays = origDelays.slice(1, -1).reverse();
+      delays = origDelays.concat(revDelays);
+    }
+  } else {
+    delays = images.map(() => baseDelay);
+  }
+  // Per-frame timing freedom: a frame's multiplier rides every appearance of
+  // it (boomerang copies included), matched by image identity so title cards
+  // and smooth-loop blends stay untouched.
+  for (let k = 0; k < images.length && k < delays.length; k++) {
+    const srcFrame = frames.find(fr => fr.img === images[k]);
+    const fm = srcFrame && srcFrame.durMult;
+    if (fm && fm !== 1) delays[k] = Math.round(delays[k] * fm);
+  }
+  const n = images.length;
+
+  // Ease boomerang turnaround: slow down at the reversal points
+  const isBoom = $('boomerangCheck').checked;
+  if (isBoom && delays.length >= 5) {
+    // Find the turnaround point (midpoint of the sequence)
+    const origLen = Math.ceil((delays.length + 2) / 2); // original frame count before boomerang
+    const turnIdx = origLen - 1;
+    // Ease: frames near turnaround get longer delays
+    if (turnIdx > 0 && turnIdx < delays.length) {
+      delays[turnIdx] = Math.round(delays[turnIdx] * 1.8);
+      if (turnIdx > 0) delays[turnIdx - 1] = Math.round(delays[turnIdx - 1] * 1.3);
+      if (turnIdx < delays.length - 1) delays[turnIdx + 1] = Math.round(delays[turnIdx + 1] * 1.3);
+    }
+    // Also ease the loop point (last frame back to first)
+    delays[delays.length - 1] = Math.round(delays[delays.length - 1] * 1.4);
+  }
+
+  // Smooth loop: cross-fade last frames into first (skip if boomerang — it already loops naturally)
+  const doSmooth = $('smoothLoopCheck').checked && !isBoom && n >= 4;
+  if (doSmooth) {
+    const blendCanvas = document.createElement('canvas');
+    const blendCtx = blendCanvas.getContext('2d');
+    const w = images[0].naturalWidth || images[0].width;
+    const h = images[0].naturalHeight || images[0].height;
+    blendCanvas.width = w; blendCanvas.height = h;
+
+    // Generate 3 transition frames blending last→first
+    const steps = 3;
+    for (let s = 1; s <= steps; s++) {
+      const alpha = s / (steps + 1);
+      blendCtx.clearRect(0, 0, w, h);
+      blendCtx.globalAlpha = 1;
+      blendCtx.drawImage(images[n - 1], 0, 0, w, h);
+      blendCtx.globalAlpha = alpha;
+      blendCtx.drawImage(images[0], 0, 0, w, h);
+      // Create image and await load
+      const dataUrl = blendCanvas.toDataURL();
+      const tImg = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = dataUrl;
+      });
+      images.push(tImg);
+      delays.push(baseDelay);
+    }
+  }
+
+  // Hold first: triple the first frame's delay
+  if ($('holdFirstCheck').checked && images.length >= 2) {
+    delays[0] = Math.round(delays[0] * 3);
+  }
+
+  // Hold last: triple the last original frame's delay
+  if ($('holdLastCheck').checked && images.length >= 2) {
+    const lastOrigIdx = doSmooth ? n - 1 : images.length - 1;
+    delays[lastOrigIdx] = Math.round(delays[lastOrigIdx] * 3);
+  }
+
+  return { images, delays };
+}
+
+// ═══════════════════════════════════════════════════════
+// Gifio GIF89a Encoder with Floyd-Steinberg dithering
+// ═══════════════════════════════════════════════════════
+
+function quantize(pixels, max) {
+  const counts = new Map();
+  for (let i = 0; i < pixels.length; i += 4) {
+    const k = (pixels[i]<<16)|(pixels[i+1]<<8)|pixels[i+2];
+    counts.set(k, (counts.get(k)||0)+1);
+  }
+  let boxes = [{colors:[...counts.entries()]}];
+  while (boxes.length < max && boxes.length < counts.size) {
+    let bi=0, br=-1;
+    for (let i=0; i<boxes.length; i++) {
+      if (boxes[i].colors.length<2) continue;
+      for (let ch=0; ch<3; ch++) {
+        let mn=255,mx=0;
+        for (const [k] of boxes[i].colors) {
+          const v=(k>>(16-ch*8))&0xFF; mn=Math.min(mn,v); mx=Math.max(mx,v);
+        }
+        if(mx-mn>br){br=mx-mn;bi=i;}
+      }
+    }
+    if (br<=0) break;
+    const box=boxes[bi]; let sc=0,sr=-1;
+    for (let ch=0;ch<3;ch++) {
+      let mn=255,mx=0;
+      for (const [k] of box.colors) { const v=(k>>(16-ch*8))&0xFF; mn=Math.min(mn,v); mx=Math.max(mx,v); }
+      if(mx-mn>sr){sr=mx-mn;sc=ch;}
+    }
+    box.colors.sort((a,b)=>((a[0]>>(16-sc*8))&0xFF)-((b[0]>>(16-sc*8))&0xFF));
+    const m=Math.floor(box.colors.length/2);
+    boxes[bi]={colors:box.colors.slice(0,m)};
+    boxes.push({colors:box.colors.slice(m)});
+  }
+  const pal = boxes.map(b => {
+    let r=0,g=0,bl=0,t=0;
+    for (const [k,c] of b.colors) { r+=((k>>16)&0xFF)*c; g+=((k>>8)&0xFF)*c; bl+=(k&0xFF)*c; t+=c; }
+    return [Math.round(r/t),Math.round(g/t),Math.round(bl/t)];
+  });
+  while (pal.length<max) pal.push([0,0,0]);
+  return pal;
+}
+
+function nearest(pal, r, g, b) {
+  let best=0, bd=Infinity;
+  for (let i=0; i<pal.length; i++) {
+    const dr=pal[i][0]-r, dg=pal[i][1]-g, db=pal[i][2]-b;
+    const d=dr*dr+dg*dg+db*db;
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+
+// Floyd-Steinberg dithering — distributes quantization error to neighbors
+function ditherFrame(pixels, w, h, pal) {
+  const r = new Float32Array(w*h), g = new Float32Array(w*h), b = new Float32Array(w*h);
+  for (let i=0; i<w*h; i++) { r[i]=pixels[i*4]; g[i]=pixels[i*4+1]; b[i]=pixels[i*4+2]; }
+  const idx = new Uint8Array(w*h);
+  for (let y=0; y<h; y++) {
+    for (let x=0; x<w; x++) {
+      const p = y*w+x;
+      const cr=Math.max(0,Math.min(255,Math.round(r[p])));
+      const cg=Math.max(0,Math.min(255,Math.round(g[p])));
+      const cb=Math.max(0,Math.min(255,Math.round(b[p])));
+      const ci = nearest(pal, cr, cg, cb);
+      idx[p] = ci;
+      const er=cr-pal[ci][0], eg=cg-pal[ci][1], eb=cb-pal[ci][2];
+      if (x+1<w)         { r[p+1]+=er*7/16; g[p+1]+=eg*7/16; b[p+1]+=eb*7/16; }
+      if (y+1<h) {
+        if (x>0)          { r[p+w-1]+=er*3/16; g[p+w-1]+=eg*3/16; b[p+w-1]+=eb*3/16; }
+                            r[p+w]+=er*5/16;   g[p+w]+=eg*5/16;   b[p+w]+=eb*5/16;
+        if (x+1<w)         { r[p+w+1]+=er*1/16; g[p+w+1]+=eg*1/16; b[p+w+1]+=eb*1/16; }
+      }
+    }
+  }
+  return idx;
+}
+
+// Simple nearest-color mapping (no dithering)
+function mapFrame(pixels, w, h, pal) {
+  const idx = new Uint8Array(w*h);
+  for (let i=0; i<idx.length; i++) idx[i] = nearest(pal, pixels[i*4], pixels[i*4+1], pixels[i*4+2]);
+  return idx;
+}
+
+function lzw(indices, minCS) {
+  const cc=1<<minCS, eoi=cc+1;
+  let cs=minCS+1, nc=eoi+1;
+  let tbl=new Map(); for(let i=0;i<cc;i++) tbl.set(''+i,i);
+  const out=[]; let bits=0,bc=0;
+  function wb(code,sz){bits|=(code<<bc);bc+=sz;while(bc>=8){out.push(bits&0xFF);bits>>=8;bc-=8;}}
+  wb(cc,cs);
+  let cur=''+indices[0];
+  for(let i=1;i<indices.length;i++){
+    const nx=cur+','+indices[i];
+    if(tbl.has(nx)){cur=nx;}
+    else{
+      wb(tbl.get(cur),cs);
+      if(nc<4096){tbl.set(nx,nc++);if(nc>(1<<cs)&&cs<12)cs++;}
+      if(nc>=4096){wb(cc,cs);tbl=new Map();for(let j=0;j<cc;j++)tbl.set(''+j,j);cs=minCS+1;nc=eoi+1;}
+      cur=''+indices[i];
+    }
+  }
+  wb(tbl.get(cur),cs); wb(eoi,cs);
+  if(bc>0) out.push(bits&0xFF);
+  return new Uint8Array(out);
+}
+
+function encodeGIF(imgs, w, h, delay, loop, dither, perFrameDelays) {
+  const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
+  const ctx=cvs.getContext('2d');
+  const allPx=[], framePx=[];
+  for (let fi=0; fi<imgs.length; fi++) {
+    ctx.clearRect(0,0,w,h);
+    compositeElement(ctx, w, h, fi, imgs.length, 'behind');
+    // Center-crop: fill target dimensions, cropping overflow
+    const srcImg = imgs[fi];
+    const sw = srcImg.naturalWidth || srcImg.width;
+    const sh = srcImg.naturalHeight || srcImg.height;
+    const srcRatio = sw / sh, dstRatio = w / h;
+    let sx = 0, sy = 0, sWidth = sw, sHeight = sh;
+    if (srcRatio > dstRatio) {
+      sWidth = sh * dstRatio; sx = (sw - sWidth) / 2;
+    } else {
+      sHeight = sw / dstRatio; sy = (sh - sHeight) / 2;
+    }
+    ctx.drawImage(srcImg, sx, sy, sWidth, sHeight, 0, 0, w, h);
+    const d=ctx.getImageData(0,0,w,h);
+    applyStyle(d.data, w, h, fi, imgs.length);
+    ctx.putImageData(d, 0, 0);
+    compositeElement(ctx, w, h, fi, imgs.length, 'overlay');
+    framePx.push(ctx.getImageData(0,0,w,h).data);
+    const step=Math.max(1,Math.floor(d.data.length/4/6000));
+    for(let i=0;i<d.data.length;i+=4*step) allPx.push(d.data[i],d.data[i+1],d.data[i+2],255);
+  }
+  const pal=quantize(new Uint8Array(allPx),256);
+  const o=[];
+  const w8=b=>o.push(b), w16=v=>{o.push(v&0xFF);o.push((v>>8)&0xFF);};
+  const ws=s=>{for(let i=0;i<s.length;i++)o.push(s.charCodeAt(i));};
+  ws('GIF89a'); w16(w); w16(h); w8(0xF7); w8(0); w8(0);
+  for(const [r,g,b] of pal){w8(r);w8(g);w8(b);}
+  w8(0x21);w8(0xFF);w8(11);ws('NETSCAPE2.0');w8(3);w8(1);w16(loop);w8(0);
+  for(let f=0;f<imgs.length;f++){
+    const dCs=perFrameDelays?Math.round(perFrameDelays[f]/10):Math.round(delay/10);
+    w8(0x21);w8(0xF9);w8(4);w8(0);w16(dCs);w8(0);w8(0);
+    w8(0x2C);w16(0);w16(0);w16(w);w16(h);w8(0);
+    const idx = dither ? ditherFrame(framePx[f],w,h,pal) : mapFrame(framePx[f],w,h,pal);
+    w8(8);
+    const d=lzw(idx,8);
+    for(let i=0;i<d.length;i+=255){const c=Math.min(255,d.length-i);w8(c);for(let j=0;j<c;j++)w8(d[i+j]);}
+    w8(0);
+  }
+  w8(0x3B);
+  return new Uint8Array(o);
+}
+
+// ═══════════════════════════════════════════════════════
+// Generate & Download
+// ═══════════════════════════════════════════════════════
+
+async function generateGif() {
+  if (frames.length < 2) return;
+  stopPlay();
+  $('actionRow').style.display = 'none';
+  $('clearRow').style.display = 'none';
+  $('progressWrap').style.display = '';
+  $('progressFill').style.width = '5%';
+  $('progressLabel').textContent = 'Gathering the frames...';
+
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    let imgs = frames.map(f => f.img);
+
+    // Title card: generate and prepend
+    if ($('titleCardCheck') && $('titleCardCheck').checked) {
+      const refImg = frames[0].img;
+      const tw = outputWidth;
+      const cropVal = $('cropSelect') ? $('cropSelect').value : 'original';
+      let th;
+      if (cropVal === 'original') th = Math.round(tw * refImg.naturalHeight / refImg.naturalWidth);
+      else { const [cw,ch] = cropVal.split(':').map(Number); th = Math.round(tw * ch / cw); }
+      const titleImg = generateTitleFrame(tw, th);
+      if (titleImg) imgs.unshift(titleImg);
+    }
+
+    // Boomerang: append reversed (minus endpoints)
+    if ($('boomerangCheck').checked && imgs.length > 2) {
+      const rev = imgs.slice(1, -1).reverse();
+      imgs = imgs.concat(rev);
+    }
+
+    // Build timing plan (smooth loop, hold first/last)
+    const plan = await buildTimingPlan(imgs);
+    imgs = plan.images;
+    const perFrameDelays = plan.delays;
+
+    // Use first original frame for dimensions, apply crop
+    const refImg = frames[0].img;
+    const cropVal = $('cropSelect') ? $('cropSelect').value : 'original';
+    let w = outputWidth, h;
+    if (cropVal === 'original') {
+      h = Math.round(w * refImg.naturalHeight / refImg.naturalWidth);
+    } else {
+      const [cw, ch] = cropVal.split(':').map(Number);
+      h = Math.round(w * ch / cw);
+    }
+    const loop = +$('loopSelect').value;
+    const dither = $('ditherCheck').checked;
+
+    $('progressFill').style.width = '15%';
+    $('progressLabel').textContent = 'Mixing your palette...';
+    await new Promise(r => setTimeout(r, 30));
+
+    $('progressFill').style.width = '30%';
+    $('progressLabel').textContent = dither ? 'Weaving the colors...' : 'Applying the look...';
+    await new Promise(r => setTimeout(r, 30));
+
+    const data = encodeGIF(imgs, w, h, speed, loop, dither, perFrameDelays);
+
+    $('progressFill').style.width = '95%';
+    $('progressLabel').textContent = 'Almost there...';
+    await new Promise(r => setTimeout(r, 100));
+
+    const blob = new Blob([data], {type:'image/gif'});
+    gifBlobUrl = URL.createObjectURL(blob);
+    gifBlobSize = blob.size;
+
+    $('progressFill').style.width = '100%';
+    await new Promise(r => setTimeout(r, 200));
+    updateUI();
+    // Scroll the actual GIF image into center view, then reveal
+    await new Promise(r => setTimeout(r, 100)); // let DOM render
+    const resultImg = $('resultImg');
+    if (resultImg) {
+      resultImg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await new Promise(r => setTimeout(r, 600));
+    }
+    requestAnimationFrame(() => revealGif());
+  } catch(e) {
+    console.error('GIF encoding failed:', e);
+    alert('Something went wrong — try a smaller output size or fewer frames.');
+    $('actionRow').style.display = '';
+    $('clearRow').style.display = '';
+  }
+  $('progressWrap').style.display = 'none';
+}
+
+function downloadGif() {
+  if (!gifBlobUrl) return;
+  const a = document.createElement('a');
+  a.href = gifBlobUrl;
+  a.download = getDownloadFilename();
+  a.click();
+}
+
+
+
+// ═══ Crop radio buttons ═══
+function setCrop(val) {
+  document.querySelectorAll('.crop-radio').forEach(r => r.classList.remove('active'));
+  const checked = document.querySelector(`.crop-radio input[value="${val}"]`);
+  if (checked) checked.closest('.crop-radio').classList.add('active');
+  // Sync hidden select for compatibility
+  const sel = document.getElementById('cropSelect');
+  if (sel) sel.value = val;
+  clearResult();
+  if (frames.length) showFrame(previewIdx);
+}
+
+// ═══ Mosaic tile reveal ═══
+function revealGif() {
+  const area = $('resultArea');
+  const img = $('resultImg');
+  if (!area || !img) return;
+
+  const doReveal = () => {
+    const old = area.querySelector('.reveal-overlay');
+    if (old) old.remove();
+
+    const rect = img.getBoundingClientRect();
+    const areaRect = area.getBoundingClientRect();
+    const imgW = rect.width;
+    const imgH = rect.height;
+    if (imgW < 10 || imgH < 10) return;
+
+    const cols = Math.max(6, Math.round(imgW / 50));
+    const rows = Math.max(4, Math.round(imgH / 50));
+
+    const overlay = document.createElement('div');
+    overlay.className = 'reveal-overlay';
+    overlay.style.width = imgW + 'px';
+    overlay.style.height = imgH + 'px';
+    overlay.style.top = (rect.top - areaRect.top) + 'px';
+    overlay.style.left = (rect.left - areaRect.left) + 'px';
+    overlay.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    overlay.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    const cx = cols / 2, cy = rows / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+    let maxDelay = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const tile = document.createElement('div');
+        tile.className = 'reveal-tile';
+        const dist = Math.sqrt((c - cx) ** 2 + (r - cy) ** 2);
+        const delay = (dist / maxDist) * 1.0;
+        const jitter = (Math.random() - 0.5) * 0.08;
+        const finalDelay = Math.max(0, delay + jitter);
+        tile.style.setProperty('--delay', finalDelay.toFixed(3) + 's');
+        if (finalDelay > maxDelay) maxDelay = finalDelay;
+        overlay.appendChild(tile);
+      }
+    }
+
+    area.appendChild(overlay);
+    setTimeout(() => overlay.remove(), (maxDelay + 0.7) * 1000);
+  };
+
+  if (img.complete && img.naturalWidth > 0) {
+    doReveal();
+  } else {
+    img.onload = doReveal;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Help overlay — Æ
+// ═══════════════════════════════════════════════════════
+
+function openHelp() {
+  document.getElementById('helpOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeHelp() {
+  document.getElementById('helpOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+    e.preventDefault();
+    document.getElementById('helpOverlay').classList.contains('open') ? closeHelp() : openHelp();
+  }
+  if (e.key === 'Escape' && document.getElementById('helpOverlay').classList.contains('open')) {
+    e.preventDefault();
+    closeHelp();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// Alive interface — slider color shift
+// ═══════════════════════════════════════════════════════
+
+function updateSliderColor(slider) {
+  const val = +slider.value;
+  const min = +slider.min;
+  const max = +slider.max;
+  const pct = (val - min) / (max - min);
+  const h = 210 - pct * 180;
+  const s = 40 + Math.abs(pct - 0.5) * 80;
+  slider.style.accentColor = `hsl(${h}, ${s}%, 42%)`;
+  // Stronger glow at the extremes
+  const extremity = Math.abs(pct - 0.5) * 2; // 0 at center, 1 at edges
+  const glowAlpha = extremity * 0.25;
+  slider.style.boxShadow = glowAlpha > 0.03
+    ? `0 0 ${6 + extremity * 8}px hsla(${h}, ${s}%, 50%, ${glowAlpha})`
+    : 'none';
+}
+
+document.querySelectorAll('.slider').forEach(s => {
+  s.addEventListener('input', () => updateSliderColor(s));
+  updateSliderColor(s);
+});
+
+// ═══════════════════════════════════════════════════════
+// Æ — console signature
+// ═══════════════════════════════════════════════════════
+
+console.log(
+  '%c✦ Gifio %c— frames in motion, meaning in between\n' +
+  '%cOne HTML file. 53 functions. Zero dependencies.\n' +
+  'Built by a human and an AI who chose to work together.\n\n' +
+  'humanityandai.com',
+  'color: #8b7355; font-size: 14px; font-weight: bold;',
+  'color: #9a8e82; font-size: 14px; font-weight: normal;',
+  'color: #b0a599; font-size: 11px;'
+);
+
+</script>
+
+  <!-- Help Button -->
+  <button class="help-btn" onclick="openHelp()" aria-label="Open help guide" title="How to make great GIFs">?</button>
+
+  <!-- Help Overlay -->
+  <div id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+    <div class="help-card">
+      <div class="help-header">
+        <h2>making better GIFs</h2>
+        <button class="close-help" onclick="closeHelp()">&#10005;</button>
+      </div>
+      <div class="help-body">
+
+        <div class="help-note">
+          Drop your images, hit Create, and you get a GIF. That's the whole thing.<br><br>
+          But if you want it to <em>feel</em> right &#8212; to loop cleanly, move at the right pace, tell a tiny story &#8212; keep reading. Every control has a mouseover hint too.
+          <div class="sig">&#8212; &#xC6;</div>
+        </div>
+
+        <h3>Getting started</h3>
+        <div class="help-grid">
+          <div class="help-item">
+            <h4>Drop images in any order</h4>
+            <p>They sort by filename automatically. Drag thumbnails to reorder. Click &#215; to remove.</p>
+          </div>
+          <div class="help-item">
+            <h4>Speed sets the rhythm</h4>
+            <p>How long each frame shows. 200ms = quick, punchy. 600ms+ = dreamy, slow. Auto-suggested based on frame count.</p>
+          </div>
+          <div class="help-item">
+            <h4>Size = detail vs. file size</h4>
+            <p>Bigger = sharper but heavier. 400&#8211;600px is great for sharing. 800+ for full quality. GIFs get big fast.</p>
+          </div>
+        </div>
+
+        <h3>What these controls actually do</h3>
+        <div class="help-grid">
+          <div class="help-item">
+            <h4>Dither</h4>
+            <p>GIFs only get 256 colors. Dithering scatters dots to fake smooth gradients &#8212; like how newspapers print photos. <span class="try">On:</span> almost always for photos. <span class="avoid">Off:</span> pixel art, flat graphics.</p>
+          </div>
+          <div class="help-item">
+            <h4>Boomerang</h4>
+            <p>Plays forward then backward, like a pendulum. That satisfying back-and-forth. Best with 3&#8211;8 frames of continuous motion.</p>
+          </div>
+          <div class="help-item">
+            <h4>Smooth loop</h4>
+            <p>Cross-fades the last frame into the first so the loop point disappears. <span class="try">Try it:</span> dancing, waves, anything that should feel endless.</p>
+          </div>
+          <div class="help-item">
+            <h4>Smart timing</h4>
+            <p>Analyzes how much changes between frames and varies speed automatically. Big visual changes slow down. Similar frames zip by. Natural rhythm from your content.</p>
+          </div>
+          <div class="help-item">
+            <h4>Hold first / Hold last</h4>
+            <p>Pauses 3&#215; longer on that frame. <span class="try">Hold first</span> for reveals ("wait for it..."). <span class="try">Hold last</span> for punchlines. Both for dramatic pauses at each end.</p>
+          </div>
+          <div class="help-item">
+            <h4>Style presets</h4>
+            <p>One-click color treatments applied at export. Your originals never change. Tonal presets (Film noir, Sepia) actually <em>help</em> GIF quality &#8212; fewer colors to compress. Rainbow/Sunset/Neon shift colors across frames.</p>
+          </div>
+          <div class="help-item">
+            <h4>Background elements</h4>
+            <p>Procedural animations layered with your frames. <span class="try">Overlay</span> blends on top of photos (rain, fireflies). Behind shows through transparent areas.</p>
+          </div>
+          <div class="help-item">
+            <h4>Crop</h4>
+            <p>Center-crops all frames. Square (1:1) for Instagram. Widescreen (16:9) for Twitter. Portrait (9:16) for Stories.</p>
+          </div>
+        </div>
+
+        <h3>Tell a tiny story</h3>
+        <div class="help-grid">
+          <div class="help-item">
+            <h4>Title card = your opening line</h4>
+            <p>Add a title card with text. It auto-detects faces for a portrait. Pick a style that sets the mood. The title gets its own frame &#8212; perfect for introducing what comes next.</p>
+          </div>
+          <div class="help-item">
+            <h4>Pace creates narrative</h4>
+            <p>A GIF that starts slow (Hold first), speeds up, and pauses at the end (Hold last) has a beginning, middle, and end. That's a story. Even in 5 frames.</p>
+          </div>
+          <div class="help-item">
+            <h4>Frame order is editing</h4>
+            <p>Drag frames to reorder. End on your strongest image. Or start with the conclusion and reverse &#8212; let the viewer discover how it happened.</p>
+          </div>
+          <div class="help-item">
+            <h4>Style as emotion</h4>
+            <p>Golden hour = warmth, nostalgia. Midnight = drama. Faded = memory, distance. The preset sets the emotional register before the viewer processes the content.</p>
+          </div>
+        </div>
+
+        <h3>Pro moves</h3>
+        <div class="help-grid">
+          <div class="help-item">
+            <h4>The reveal</h4>
+            <p>Title card &#8594; Hold first &#8594; 3&#8211;5 action frames &#8594; Hold last. Wait, watch, land. Works for before/after, recaps, product demos.</p>
+          </div>
+          <div class="help-item">
+            <h4>The infinite loop</h4>
+            <p>Smooth loop ON + a sequence that starts and ends similarly. No jarring reset. Hypnotic. Great for ambient displays.</p>
+          </div>
+          <div class="help-item">
+            <h4>The boomerang bounce</h4>
+            <p>3&#8211;5 frames of someone jumping, waving, any quick motion + Boomerang + fast speed. Classic satisfying loop. Turnaround eases automatically.</p>
+          </div>
+          <div class="help-item">
+            <h4>The mood piece</h4>
+            <p>Slow speed (800ms+) + Film noir or Midnight + Customize: crank Vignette + Fireflies or Aurora. Simple photos become cinematic.</p>
+          </div>
+        </div>
+
+        <h3>What to avoid</h3>
+        <div class="help-grid">
+          <div class="help-item">
+            <h4>&#9888; Too many frames at full size</h4>
+            <p>20+ frames at 1200px = massive file. Social media will reject it. Reduce size to 400&#8211;600px, or cut frames.</p>
+          </div>
+          <div class="help-item">
+            <h4>&#9888; Smooth loop + Boomerang</h4>
+            <p>They fight each other. Boomerang already loops naturally. Pick one.</p>
+          </div>
+          <div class="help-item">
+            <h4>&#9888; Backgrounds on busy photos</h4>
+            <p>Overlay rain on a complex scene = visual noise. Backgrounds shine on simple subjects or slow sequences with breathing room.</p>
+          </div>
+          <div class="help-item">
+            <h4>&#9888; Dither off on photos</h4>
+            <p>Without dithering, photos get harsh color banding &#8212; flat blobs where gradients should be. Only off for pixel art or solid-color graphics.</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="help-footer">
+        <kbd>?</kbd> toggle help &middot; <kbd>Space</kbd> play/pause &middot; <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> step frames &middot; <kbd>Esc</kbd> close
+      </div>
+    </div>
+  </div>
+
+<style>
+/* ═══ Design pass, Nov 11 2026: house DNA (paper, ink, gold, Roboto Serif with Roboto),
+   readable sizes, the spectrum as Gifio's own mark. Loaded last so it wins. ═══ */
+:root {
+  --paper: #F0EDE6; --card: #FAF8F4; --ink: #2A2622; --muted: #615B53;
+  --gold: #8B6834; --gold-deep: #6E5228; --line: #D9D2C6;
+}
+body { background: var(--paper); color: var(--ink); font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; }
+.app { padding-top: 2rem; }
+.mark { margin: 0 0 .25rem -10px; opacity: 1; }
+.mark svg { width: 300px; height: auto; overflow: visible; }
+h1 { font-family: 'Roboto Serif', Georgia, serif; font-weight: 300; font-style: italic; font-size: 3.2rem; line-height: 1; color: var(--ink); letter-spacing: -0.03em; font-variation-settings: 'opsz' 144; margin-bottom: .6rem; }
+.subtitle { font-size: 1.05rem; line-height: 1.5; color: var(--ink); letter-spacing: 0; max-width: 34em; margin-bottom: .5rem; }
+.privacy-note { display: block; background: none; padding: 0; border-radius: 0; font-size: .9rem; color: var(--muted); margin-bottom: 1.5rem; }
+.drop-zone { border: 2px dashed #B9AE9E; background: var(--card); border-radius: 16px; }
+.drop-zone:hover, .drop-zone.active { border-color: var(--gold); background: #fff; }
+.drop-icon { color: var(--gold); }
+.drop-text { font-size: 1.15rem; font-weight: 500; color: var(--ink); }
+.drop-hint { font-size: .9rem; color: var(--muted); }
+.sample-row { display: flex; align-items: center; gap: .75rem; margin-top: .9rem; flex-wrap: wrap; }
+.sample-btn { font: inherit; font-size: .95rem; font-weight: 500; color: var(--gold-deep); background: none; border: 1.5px solid var(--gold); border-radius: 999px; padding: .6rem 1.1rem; min-height: 44px; cursor: pointer; }
+.sample-btn:hover { background: var(--gold); color: #fff; }
+.sample-note { font-size: .85rem; color: var(--muted); }
+.style-title { font-family: 'Roboto Serif', Georgia, serif; font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+.control-label { font-size: .92rem; color: var(--ink); }
+.control-value, .duration-est, .result-size, .frame-counter { font-size: .85rem; color: var(--muted); }
+.preset-chip-label, .elem-chip-label { font-size: .75rem; color: var(--muted); max-width: 76px; }
+.crop-label { font-size: .75rem; color: var(--muted); }
+.toggle-text { font-size: .9rem; color: var(--ink); }
+.customize-toggle { font-size: .9rem; color: var(--gold-deep); min-height: 44px; }
+.frame-label { font-size: .75rem; color: var(--muted); }
+.frame-delete { width: 30px; height: 30px; font-size: 16px; }
+.footer { font-size: .85rem; color: var(--muted); }
+.footer-link { color: var(--gold-deep); padding: 12px 4px; display: inline-block; }
+.footer-sep { display: inline-block; width: 1.25rem; }
+.kbd-hint { font-size: .8rem; color: var(--muted); }
+.smart-hint { font-size: .9rem; color: var(--gold-deep); }
+.btn-primary { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 1.05rem; background: var(--gold); }
+.btn-primary:disabled { opacity: 1; background: transparent; color: var(--muted); border: 1.5px dashed #B9AE9E; box-shadow: none; animation: none; }
+.btn-primary:disabled::before, .btn-primary:disabled::after { display: none; }
+.preview-area, .controls, .result-area { background: var(--card); }
+/* The help button lives at the top of the page, so it never sits on top of the preview. */
+.help-btn { position: absolute; top: 18px; right: 18px; bottom: auto; font-family: 'Roboto Serif', Georgia, serif; box-shadow: none; }
+@media (max-width: 640px) {
+  h1 { font-size: 2.6rem; }
+  .subtitle { font-size: 1rem; }
+  .help-btn { top: 12px; right: 12px; bottom: auto; }
+  /* Phone: the make button rides along at the bottom, so nobody scrolls 2,000 pixels to find it. */
+  #actionRow { position: sticky; bottom: 0; z-index: 50; margin: 1rem 0 0; padding: .75rem 0 calc(.75rem + env(safe-area-inset-bottom)); background: rgba(240,237,230,.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
+  #actionRow .btn-primary { width: 100%; }
+}
+@media (max-width: 380px) {
+  .preset-chip-label, .elem-chip-label { font-size: .72rem; }
+}
+/* The one moment of motion: on first load the seven frames of the mark fan out from a stack,
+   square to round, the way Gifio moves a picture from one frame to the next. */
+@media (prefers-reduced-motion: no-preference) {
+  .mark .mk { transform-box: fill-box; transform-origin: center; animation: mkFan 1.1s cubic-bezier(.2,.8,.2,1) both; }
+  .mark .mk-dot { animation: mkDot .5s ease-out both; }
+}
+@keyframes mkFan { from { transform: translateX(var(--from, 0)); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+@keyframes mkDot { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+</style>
+<script>
+// ═══ Design pass, Nov 11 2026 ═══
+// 1. The mark's first-load motion: each frame starts stacked on the first and fans out.
+(function () {
+  const svg = document.querySelector('.mark svg'); if (!svg) return;
+  const shapes = [...svg.querySelectorAll('rect, ellipse, path, line:not([y1="196"])')];
+  shapes.forEach(el => {
+    const box = el.getBBox();
+    const from = 68 - box.x;                 // distance back to the first frame
+    el.classList.add('mk');
+    el.style.setProperty('--from', from + 'px');
+    el.style.animationDelay = Math.round((box.x - 68) / 480 * 500) + 'ms';
+  });
+  [...svg.querySelectorAll('circle')].forEach((c, i) => { c.classList.add('mk-dot'); c.style.animationDelay = (700 + i * 60) + 'ms'; });
+})();
+
+// 2. Sample pictures: a stranger arriving from the Humanity and AI site may not have
+// a burst of photos at hand. Seven drawn frames of a dancer turning, made on this device.
+function makeSampleFrames() {
+  const W = 960, H = 720, files = [];
+  let made = 0;
+  const btn = document.getElementById('sampleBtn'); if (btn) btn.disabled = true;
+  for (let i = 0; i < 7; i++) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const t = i / 7, sway = Math.sin(t * 2 * Math.PI);
+    g.fillStyle = '#1c1216'; g.fillRect(0, 0, W, H);
+    const glow = g.createRadialGradient(W / 2, H * .55, 10, W / 2, H * .55, 460);
+    glow.addColorStop(0, 'rgba(214,140,70,.75)'); glow.addColorStop(1, 'rgba(28,18,22,0)');
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#34201e'; g.fillRect(0, H * .82, W, H * .18);
+    const cx = W / 2 + sway * 56, cy = H * .5;
+    // skirt
+    g.beginPath(); g.moveTo(cx, cy + 16);
+    for (let k = -10; k <= 10; k++) {
+      const a = (90 + k * 6 + sway * 22) * Math.PI / 180, r = 200 + 24 * Math.sin(k * .9 + t * 6.28);
+      g.lineTo(cx + Math.cos(a) * r, cy + 16 + Math.sin(a) * r);
+    }
+    g.closePath(); g.fillStyle = '#c4344a'; g.fill();
+    g.strokeStyle = 'rgba(240,190,90,.6)'; g.lineWidth = 2.5;
+    for (let k = -10; k <= 10; k += 2) {
+      const a = (90 + k * 6 + sway * 22) * Math.PI / 180;
+      g.beginPath(); g.moveTo(cx, cy + 16); g.lineTo(cx + Math.cos(a) * 200, cy + 16 + Math.sin(a) * 200); g.stroke();
+    }
+    // body, head, hair
+    g.fillStyle = '#d6a078';
+    g.beginPath(); g.roundRect ? g.roundRect(cx - 27, cy - 120, 54, 144, 21) : g.rect(cx - 27, cy - 120, 54, 144); g.fill();
+    g.beginPath(); g.arc(cx, cy - 157, 29, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#28181a'; g.beginPath(); g.arc(cx, cy - 158, 33, Math.PI, 2 * Math.PI); g.fill();
+    // arms
+    g.strokeStyle = '#d6a078'; g.lineWidth = 18; g.lineCap = 'round';
+    [-1, 1].forEach(side => {
+      const a = (-90 + side * (55 + sway * 30 * side)) * Math.PI / 180;
+      const ex = cx + Math.cos(a) * 152, ey = cy - 96 + Math.sin(a) * 152;
+      g.beginPath(); g.moveTo(cx + side * 24, cy - 96); g.lineTo(ex, ey); g.stroke();
+      g.fillStyle = '#f0c86e'; g.beginPath(); g.arc(ex, ey, 11, 0, Math.PI * 2); g.fill();
+    });
+    c.toBlob(b => {
+      files[i] = new File([b], 'Sample dancer ' + (i + 1) + ' of 7.png', { type: 'image/png' });
+      if (++made === 7) { loadImages(files); if (btn) btn.disabled = false; }
+    }, 'image/png');
+  }
+}
+</script>
+</body>
+</html>

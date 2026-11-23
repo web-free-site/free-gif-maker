@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://free-gif-maker.web-free.site/sitemap.xml

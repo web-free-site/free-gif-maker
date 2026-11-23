@@ -1,0 +1,10 @@
+AGENT_BRIEF.md
+wrangler.toml
+package.json
+package-lock.json
+.git/
+node_modules/
+upstream/
+scripts/
+README.md
+LICENSE-UPSTREAM

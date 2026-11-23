@@ -2,10 +2,10 @@
   "name": "free-gif-maker",
   "version": "1.0.0",
   "private": true,
-  "description": "Free GIF Maker — turn images into an animated GIF in your browser",
+  "description": "Free GIF Maker \u2014 turn images into an animated GIF in your browser",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs && node scripts/prerender-pages.mjs && node scripts/generate-sitemap.mjs && node scripts/inject-more-tools.mjs",
+    "build": "node scripts/build.mjs && node scripts/prerender-pages.mjs && node scripts/generate-sitemap.mjs && node scripts/inject-more-tools.mjs && node scripts/inject-hub-legal.mjs",
     "preview": "npx --yes serve dist -l 4173",
     "test:smoke": "node scripts/smoke-gif.mjs"
   },

@@ -139,6 +139,10 @@ article li{margin:.35rem 0}
 </style>
 <script type="application/ld+json">${ld}</script>
 <script src="https://ref.web-free.site/r.js" defer></script>
+<meta property="og:image" content="https://free-gif-maker.web-free.site/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:image" content="https://free-gif-maker.web-free.site/og.png" />
 </head>
 <body>
 <header class="site-chrome">
